@@ -1,0 +1,13 @@
+import { useEffect,useRef,useState } from 'react';
+import { Routes,Route,useNavigate,useLocation,Link } from 'react-router-dom';
+import Header from './components/Header';
+import AccessibilityPanel from './components/AccessibilityPanel';
+import Snackbar from './components/Snackbar';
+import Home from './pages/Home';
+import Explore from './pages/Explore';
+import Detail from './pages/Detail';
+import Watchlist from './pages/Watchlist';
+import { useWatchlist } from './hooks/useWatchlist';
+import { useAccessibility } from './hooks/useAccessibility';
+export default function App(){const list=useWatchlist();const settings=useAccessibility();const [query,setQuery]=useState('');const [accessOpen,setAccessOpen]=useState(false);const [notice,setNotice]=useState(null);const timer=useRef();const main=useRef();const navigate=useNavigate();const location=useLocation();useEffect(()=>{window.scrollTo(0,0);if(document.activeElement?.id!=='global-search')main.current?.focus();},[location.pathname]);useEffect(()=>()=>clearTimeout(timer.current),[]);const closeNotice=()=>{clearTimeout(timer.current);setNotice(null);};const toggle=id=>{clearTimeout(timer.current);if(list.ids.includes(id)){const index=list.ids.indexOf(id);list.remove(id);setNotice({message:'Elemento eliminado de tu lista',undo:()=>list.restore(id,index)});}else{list.add(id);setNotice({message:'Historia agregada a tu lista'});}timer.current=setTimeout(()=>setNotice(null),5000);};const search=value=>{setQuery(value);if(location.pathname!=='/explorar')navigate('/explorar');};const props={ids:list.ids,onToggle:toggle};return <><a className="skip-link" href="#main">Saltar al contenido</a><Header query={query} onSearch={search} count={list.ids.length} onAccessibility={()=>setAccessOpen(true)}/><main id="main" ref={main} tabIndex={-1}>{list.error&&<p role="status" className="storage-warning">{list.error}</p>}<Routes><Route path="/" element={<Home {...props}/>}/><Route path="/explorar" element={<Explore {...props} query={query} onSearch={setQuery}/>}/><Route path="/mi-lista" element={<Watchlist {...props}/>}/><Route path="/resena/:id" element={<Detail {...props}/>}/><Route path="*" element={<div className="empty-state"><h1>No encontramos esta página</h1><Link to="/">Volver al inicio</Link></div>}/></Routes></main><footer><Link className="footer-brand" to="/">entre líneas.</Link><span>Buenas historias. Decisiones a tu manera.</span><small>Proyecto de Ingeniería de Software · MVP 2026</small></footer><AccessibilityPanel open={accessOpen} onClose={()=>setAccessOpen(false)} settings={settings}/>{notice&&<Snackbar message={notice.message} onClose={closeNotice} onUndo={notice.undo?()=>{notice.undo();closeNotice();}:null}/>}</>}
+

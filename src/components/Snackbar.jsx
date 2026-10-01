@@ -1,0 +1,1 @@
+export default function Snackbar({message,onUndo,onClose}){return <div className="snackbar" role="status"><span>{message}</span>{onUndo&&<button onClick={onUndo}>Deshacer</button>}<button onClick={onClose} aria-label="Cerrar notificación">×</button></div>}
