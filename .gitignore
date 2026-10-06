@@ -8,3 +8,5 @@ dist/
 .npm-cache/
 test-results/
 playwright-report/
+.test-db/
+.test-artifacts/

@@ -1,0 +1,47 @@
+import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+const content = JSON.parse(
+  readFileSync(new URL('../../server/prisma/demo.json', import.meta.url), 'utf8'),
+);
+mkdirSync('public/covers', { recursive: true });
+const palettes = [
+  ['#183b32', '#c3bc82'],
+  ['#bd7843', '#ffe0a6'],
+  ['#253b60', '#e7bf75'],
+  ['#833e37', '#eec697'],
+  ['#192a40', '#b9d4dd'],
+  ['#416e76', '#d3e8c8'],
+  ['#253e36', '#b7c4b0'],
+  ['#758d96', '#f5e7cc'],
+  ['#5f8177', '#e0d7a3'],
+  ['#243649', '#9abdc6'],
+  ['#808c47', '#f4dfa0'],
+  ['#776990', '#dbe0f0'],
+  ['#253a36', '#dac770'],
+  ['#385843', '#f0d7a1'],
+  ['#466e76', '#dde9e1'],
+  ['#b17b4d', '#eee0b1'],
+];
+const escape = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+content.forEach((item, i) => {
+  const [base, light] = palettes[i];
+  const words = item.title.split(' ');
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    if ((line + ' ' + word).length > 20 && line) {
+      lines.push(line);
+      line = word;
+    } else line += (line ? ' ' : '') + word;
+  }
+  lines.push(line);
+  const text = lines
+    .map(
+      (line, j) =>
+        `<text x="200" y="${88 + j * 32}" text-anchor="middle" fill="${light}" font-family="Georgia, serif" font-size="${lines.length > 3 ? 24 : 29}">${escape(line)}</text>`,
+    )
+    .join('');
+  writeFileSync(
+    `public/covers/${item.id}.svg`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="560" viewBox="0 0 400 560"><rect width="400" height="560" fill="${base}"/><defs><pattern id="grain" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="2" cy="3" r=".7" fill="${light}" opacity=".12"/></pattern></defs><rect width="400" height="560" fill="url(#grain)"/><rect x="20" y="20" width="360" height="520" rx="2" fill="none" stroke="${light}" stroke-opacity=".4"/><text x="200" y="47" text-anchor="middle" fill="${light}" font-family="sans-serif" font-size="9" letter-spacing="4">ENTRE LÍNEAS · COLECCIÓN</text>${text}<circle cx="${180 + (i % 3) * 20}" cy="300" r="${60 + (i % 4) * 8}" fill="${light}" opacity=".8"/><circle cx="${210 + (i % 3) * 12}" cy="278" r="${57 + (i % 4) * 8}" fill="${base}"/><path d="M0 475 L100 ${355 + (i % 3) * 22} L170 431 L260 ${338 + (i % 4) * 15} L400 475 V560 H0Z" fill="${light}" opacity=".35"/><path d="M0 500 L130 432 L208 470 L318 393 L400 462 V560 H0Z" fill="${light}" opacity=".3"/><path d="M200 450 Q150 350 205 325 Q255 390 200 450Z" fill="${base}"/><path d="M200 440 V340" stroke="${light}" stroke-width="2"/><text x="200" y="517" text-anchor="middle" fill="${light}" font-family="sans-serif" font-size="11" letter-spacing="3">${item.year} · ${escape(item.genre.toUpperCase())}</text></svg>`,
+  );
+});

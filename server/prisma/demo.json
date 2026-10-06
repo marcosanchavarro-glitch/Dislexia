@@ -1,0 +1,370 @@
+[
+  {
+    "id": "anillos",
+    "title": "El Señor de los Anillos",
+    "type": "BOOK",
+    "genre": "Fantasía",
+    "year": 1954,
+    "rating": 9.5,
+    "synopsis": "Una comunidad improbable emprende un viaje para destruir un anillo que amenaza el destino de la Tierra Media.",
+    "best": [
+      "Un mundo extraordinariamente rico",
+      "Personajes que crecen con el viaje"
+    ],
+    "worst": [
+      "El comienzo requiere paciencia"
+    ],
+    "verdict": "Una aventura sobre la amistad y el coraje que sigue resonando mucho después de la última página.",
+    "author": "J. R. R. Tolkien",
+    "pages": 1200,
+    "slug": "anillos",
+    "imageUrl": "/covers/anillos.svg",
+    "recommended": true,
+    "status": "PUBLISHED"
+  },
+  {
+    "id": "dune",
+    "title": "Dune",
+    "type": "BOOK",
+    "genre": "Ciencia ficción",
+    "year": 1965,
+    "rating": 9.2,
+    "synopsis": "En un planeta desértico, una familia se enfrenta a una lucha por el poder y el recurso más valioso del universo.",
+    "best": [
+      "Intriga política fascinante",
+      "Una ecología imaginada con detalle"
+    ],
+    "worst": [
+      "Muchos nombres al principio"
+    ],
+    "verdict": "Una lectura exigente y profundamente gratificante.",
+    "author": "Frank Herbert",
+    "pages": 688,
+    "slug": "dune",
+    "imageUrl": "/covers/dune.svg",
+    "recommended": false,
+    "status": "PUBLISHED"
+  },
+  {
+    "id": "principito",
+    "title": "El principito",
+    "type": "BOOK",
+    "genre": "Fantasía",
+    "year": 1943,
+    "rating": 9,
+    "synopsis": "Un pequeño viajero recorre planetas y descubre lo que hace valiosos a los vínculos.",
+    "best": [
+      "Breve y evocador",
+      "Admite múltiples lecturas"
+    ],
+    "worst": [
+      "Su simbolismo puede resultar abstracto"
+    ],
+    "verdict": "Una historia pequeña con preguntas enormes.",
+    "author": "Antoine de Saint-Exupéry",
+    "pages": 96,
+    "slug": "principito",
+    "imageUrl": "/covers/principito.svg",
+    "recommended": false,
+    "status": "PUBLISHED"
+  },
+  {
+    "id": "1984",
+    "title": "1984",
+    "type": "BOOK",
+    "genre": "Distopía",
+    "year": 1949,
+    "rating": 9.1,
+    "synopsis": "Winston intenta preservar su identidad en una sociedad donde incluso el pensamiento está vigilado.",
+    "best": [
+      "Tensión sostenida",
+      "Ideas que invitan a reflexionar"
+    ],
+    "worst": [
+      "Una atmósfera deliberadamente opresiva"
+    ],
+    "verdict": "Una novela inquietante sobre el lenguaje y el poder.",
+    "author": "George Orwell",
+    "pages": 328,
+    "slug": "1984",
+    "imageUrl": "/covers/1984.svg",
+    "recommended": false,
+    "status": "PUBLISHED"
+  },
+  {
+    "id": "interestelar",
+    "title": "Interestelar",
+    "type": "MOVIE",
+    "genre": "Ciencia ficción",
+    "year": 2014,
+    "rating": 9.1,
+    "synopsis": "Un equipo atraviesa un agujero de gusano buscando un futuro para la humanidad.",
+    "best": [
+      "Escala visual impresionante",
+      "Una banda sonora memorable"
+    ],
+    "worst": [
+      "La explicación final divide opiniones"
+    ],
+    "verdict": "Un viaje cósmico que encuentra su centro en los vínculos humanos.",
+    "director": "Christopher Nolan",
+    "duration": 169,
+    "slug": "interestelar",
+    "imageUrl": "/covers/interestelar.svg",
+    "recommended": true,
+    "status": "PUBLISHED"
+  },
+  {
+    "id": "viaje",
+    "title": "El viaje de Chihiro",
+    "type": "MOVIE",
+    "genre": "Animación",
+    "year": 2001,
+    "rating": 9.4,
+    "synopsis": "Una niña entra en un mundo de espíritus y debe encontrar la forma de salvar a sus padres.",
+    "best": [
+      "Imaginación visual deslumbrante",
+      "Una protagonista inolvidable"
+    ],
+    "worst": [
+      "Algunas reglas del mundo quedan abiertas"
+    ],
+    "verdict": "Una experiencia llena de asombro y sensibilidad.",
+    "director": "Hayao Miyazaki",
+    "duration": 125,
+    "slug": "viaje",
+    "imageUrl": "/covers/viaje.svg",
+    "recommended": false,
+    "status": "PUBLISHED"
+  },
+  {
+    "id": "parasitos",
+    "title": "Parásitos",
+    "type": "MOVIE",
+    "genre": "Suspenso",
+    "year": 2019,
+    "rating": 9.3,
+    "synopsis": "Dos familias de realidades muy distintas se cruzan en una casa donde nada es tan simple como parece.",
+    "best": [
+      "Guion preciso",
+      "Cambios de tono sorprendentes"
+    ],
+    "worst": [
+      "Escenas de violencia intensa"
+    ],
+    "verdict": "Una mirada incisiva a la desigualdad, narrada con enorme inventiva.",
+    "director": "Bong Joon-ho",
+    "duration": 132,
+    "slug": "parasitos",
+    "imageUrl": "/covers/parasitos.svg",
+    "recommended": false,
+    "status": "PUBLISHED"
+  },
+  {
+    "id": "truman",
+    "title": "The Truman Show",
+    "type": "MOVIE",
+    "genre": "Drama",
+    "year": 1998,
+    "rating": 8.8,
+    "synopsis": "Truman empieza a sospechar que la vida perfecta que conoce oculta un enorme secreto.",
+    "best": [
+      "Una premisa brillante",
+      "Interpretación cálida y convincente"
+    ],
+    "worst": [
+      "Algunos personajes secundarios poco explorados"
+    ],
+    "verdict": "Una película que invita a pensar en la libertad y la mirada de los demás.",
+    "director": "Peter Weir",
+    "duration": 103,
+    "slug": "truman",
+    "imageUrl": "/covers/truman.svg",
+    "recommended": false,
+    "status": "PUBLISHED"
+  },
+  {
+    "id": "zelda",
+    "title": "The Legend of Zelda: Breath of the Wild",
+    "type": "GAME",
+    "genre": "Aventura",
+    "year": 2017,
+    "rating": 9.6,
+    "synopsis": "Link despierta en un reino en ruinas y puede explorar libremente para recuperar su historia.",
+    "best": [
+      "Exploración llena de descubrimientos",
+      "Soluciones creativas a cada desafío"
+    ],
+    "worst": [
+      "Las armas se rompen con frecuencia"
+    ],
+    "verdict": "Una aventura que recompensa la curiosidad a cada paso.",
+    "developer": "Nintendo",
+    "platform": "Nintendo Switch / Wii U",
+    "slug": "zelda",
+    "imageUrl": "/covers/zelda.svg",
+    "recommended": true,
+    "status": "PUBLISHED"
+  },
+  {
+    "id": "hollow",
+    "title": "Hollow Knight",
+    "type": "GAME",
+    "genre": "Aventura",
+    "year": 2017,
+    "rating": 9.2,
+    "synopsis": "Un pequeño caballero explora un reino subterráneo, entre secretos y encuentros desafiantes.",
+    "best": [
+      "Arte y música excepcionales",
+      "Combate preciso"
+    ],
+    "worst": [
+      "Dificultad elevada en algunos jefes"
+    ],
+    "verdict": "Un mundo melancólico que invita a perderse y persistir.",
+    "developer": "Team Cherry",
+    "platform": "PC / Switch / PlayStation / Xbox",
+    "slug": "hollow",
+    "imageUrl": "/covers/hollow.svg",
+    "recommended": false,
+    "status": "PUBLISHED"
+  },
+  {
+    "id": "stardew",
+    "title": "Stardew Valley",
+    "type": "GAME",
+    "genre": "Simulación",
+    "year": 2016,
+    "rating": 9,
+    "synopsis": "Heredás una granja y construís tu propia rutina entre cultivos, amistades y exploración.",
+    "best": [
+      "Ritmo personalizable",
+      "Gran variedad de actividades"
+    ],
+    "worst": [
+      "La gestión inicial puede abrumar"
+    ],
+    "verdict": "Un refugio cotidiano que permite jugar a tu manera.",
+    "developer": "ConcernedApe",
+    "platform": "PC / Consolas / Móvil",
+    "slug": "stardew",
+    "imageUrl": "/covers/stardew.svg",
+    "recommended": false,
+    "status": "PUBLISHED"
+  },
+  {
+    "id": "celeste",
+    "title": "Celeste",
+    "type": "GAME",
+    "genre": "Plataformas",
+    "year": 2018,
+    "rating": 9.3,
+    "synopsis": "Madeline escala una montaña mientras aprende a convivir con sus propios miedos.",
+    "best": [
+      "Controles precisos",
+      "Modo de asistencia flexible"
+    ],
+    "worst": [
+      "Requiere muchos intentos"
+    ],
+    "verdict": "Un desafío sensible que conecta sus mecánicas con su historia.",
+    "developer": "Maddy Makes Games",
+    "platform": "PC / Switch / PlayStation / Xbox",
+    "slug": "celeste",
+    "imageUrl": "/covers/celeste.svg",
+    "recommended": false,
+    "status": "PUBLISHED"
+  },
+  {
+    "id": "dark",
+    "title": "Dark",
+    "type": "SERIES",
+    "genre": "Ciencia ficción",
+    "year": 2017,
+    "rating": 9,
+    "synopsis": "La desaparición de un niño revela un entramado de secretos familiares que atraviesa generaciones.",
+    "best": [
+      "Estructura narrativa ambiciosa",
+      "Atmósfera envolvente"
+    ],
+    "worst": [
+      "Seguir los vínculos requiere atención"
+    ],
+    "verdict": "Un rompecabezas que recompensa una mirada atenta.",
+    "creator": "Baran bo Odar y Jantje Friese",
+    "seasons": 3,
+    "slug": "dark",
+    "imageUrl": "/covers/dark.svg",
+    "recommended": true,
+    "status": "PUBLISHED"
+  },
+  {
+    "id": "breaking",
+    "title": "Breaking Bad",
+    "type": "SERIES",
+    "genre": "Drama",
+    "year": 2008,
+    "rating": 9.5,
+    "synopsis": "Un profesor de química toma una decisión que transforma su vida y la de su familia.",
+    "best": [
+      "Evolución de personajes excepcional",
+      "Tensión creciente"
+    ],
+    "worst": [
+      "Violencia y situaciones intensas"
+    ],
+    "verdict": "Un estudio contundente de las decisiones y sus consecuencias.",
+    "creator": "Vince Gilligan",
+    "seasons": 5,
+    "slug": "breaking",
+    "imageUrl": "/covers/breaking.svg",
+    "recommended": false,
+    "status": "PUBLISHED"
+  },
+  {
+    "id": "severance",
+    "title": "Severance",
+    "type": "SERIES",
+    "genre": "Suspenso",
+    "year": 2022,
+    "rating": 9.1,
+    "synopsis": "Un grupo de empleados divide sus recuerdos de trabajo y su vida personal mediante un procedimiento misterioso.",
+    "best": [
+      "Premisa original",
+      "Dirección visual precisa"
+    ],
+    "worst": [
+      "El ritmo inicial es pausado"
+    ],
+    "verdict": "Una inquietante exploración de la identidad y el trabajo.",
+    "creator": "Dan Erickson",
+    "seasons": 2,
+    "slug": "severance",
+    "imageUrl": "/covers/severance.svg",
+    "recommended": false,
+    "status": "PUBLISHED"
+  },
+  {
+    "id": "avatar",
+    "title": "Avatar: la leyenda de Aang",
+    "type": "SERIES",
+    "genre": "Animación",
+    "year": 2005,
+    "rating": 9.3,
+    "synopsis": "Un joven debe aprender a dominar cuatro elementos para devolver el equilibrio al mundo.",
+    "best": [
+      "Personajes entrañables",
+      "Temas complejos narrados con claridad"
+    ],
+    "worst": [
+      "Algunos episodios iniciales más simples"
+    ],
+    "verdict": "Una aventura generosa sobre la responsabilidad y la empatía.",
+    "creator": "Michael Dante DiMartino y Bryan Konietzko",
+    "seasons": 3,
+    "slug": "avatar",
+    "imageUrl": "/covers/avatar.svg",
+    "recommended": false,
+    "status": "PUBLISHED"
+  }
+]

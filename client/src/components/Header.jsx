@@ -1,0 +1,31 @@
+import { NavLink, Link } from 'react-router-dom';
+import { BookOpen, SlidersHorizontal } from 'lucide-react';
+import SearchBar from './SearchBar';
+export default function Header({ query, onSearch, count, onAccessibility }) {
+  return (
+    <header className="header">
+      <div className="header-inner">
+        <Link className="brand" to="/" aria-label="Entre líneas, inicio">
+          <span className="brand-icon">
+            <BookOpen size={23} />
+          </span>
+          entre líneas<span className="brand-dot">.</span>
+        </Link>
+        <nav aria-label="Navegación principal">
+          <NavLink to="/" end>
+            Inicio
+          </NavLink>
+          <NavLink to="/explorar">Explorar</NavLink>
+          <NavLink to="/mi-lista">
+            Mi lista <span className="count">{count}</span>
+          </NavLink>
+        </nav>
+        <button className="access-button" onClick={onAccessibility}>
+          <SlidersHorizontal size={18} />
+          <span>Accesibilidad</span>
+        </button>
+        <SearchBar query={query} onSearch={onSearch} />
+      </div>
+    </header>
+  );
+}

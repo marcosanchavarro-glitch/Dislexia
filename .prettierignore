@@ -1,0 +1,10 @@
+node_modules
+dist
+.npm-cache
+.test-db
+test-results
+playwright-report
+package-lock.json
+client/package-lock.json
+server/package-lock.json
+client/public/covers

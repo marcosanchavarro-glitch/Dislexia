@@ -1,98 +1,257 @@
-# Entre líneas
+# Entre líneas · versión full stack
 
-Plataforma de reseñas para Ingeniería de Software. MVP funcional con React, Vite, JavaScript, CSS, Fuse.js y localStorage. Sin backend, claves ni servicios externos en tiempo de ejecución. Las 16 portadas son ilustraciones SVG locales originales, no posters oficiales; las reseñas y puntuaciones son editoriales de demostración.
+Plataforma de reseñas de libros, películas, juegos y series para Ingeniería de Software. Conserva la identidad visual del frontend original y agrega un espacio editorial con autenticación, base de datos y gestión de imágenes. No hay registro público ni cuentas para lectores.
 
-## Ejecutar
+## Tecnologías y arquitectura
 
-Requiere Node.js 22 o posterior y npm.
+- **Client:** React, Vite, JavaScript, React Router, Fuse.js y el CSS original. Preferencias y Mi lista siguen en localStorage.
+- **Server:** Node.js 22+, Express 5, Prisma, PostgreSQL, JWT, bcrypt, Zod, Multer, Sharp y Cloudinary.
+- El navegador consulta únicamente reseñas publicadas. Fuse.js busca sobre los datos reales recibidos.
+- El administrador envía un JWT Bearer; el servidor valida el token y que la cuenta siga existiendo en cada solicitud. Vigencia: dos horas. Se conserva en sessionStorage por pestaña, con respaldo en memoria si el navegador bloquea ese almacenamiento. Salir borra el token del navegador; un token emitido sigue siendo válido hasta su vencimiento.
+- Las imágenes se reciben en memoria (máximo 5 MB), se validan por extensión, MIME y decodificación real, se convierten a WebP y se suben desde el servidor a Cloudinary. No se guardan archivos de usuario en Render.
+- Las imágenes reemplazadas o eliminadas se registran en una cola PostgreSQL en la misma transacción de la reseña. Se intenta eliminarlas inmediatamente y cada minuto; la cola sobrevive a reinicios y fallos del proveedor. `npm run images:cleanup` permite procesarla manualmente.
+- Las portadas SVG originales de demostración continúan en `client/public/covers`; no están en Cloudinary y no se intenta borrarlas remotamente.
+
+```text
+/
+├── client/
+│   ├── public/covers/          portadas originales y placeholder
+│   ├── src/
+│   │   ├── components/         componentes originales y feedback/modal
+│   │   ├── context/            sesión administrativa y rutas protegidas
+│   │   ├── data/               etiquetas de categorías, sin catálogo estático
+│   │   ├── hooks/              catálogo API, accesibilidad, Mi lista
+│   │   ├── lib/                API centralizada, búsqueda y almacenamiento
+│   │   ├── pages/admin/        Login, Dashboard, Editor y Preview
+│   │   ├── pages/              Inicio, Explorar, Detalle y Mi lista
+│   │   └── styles/             CSS original + extensión administrativa
+│   └── tests/                  pruebas unitarias y navegador
+├── server/
+│   ├── prisma/                 schema, migración inicial, seed y 16 reseñas
+│   ├── scripts/                arranque, limpieza y pruebas PostgreSQL
+│   ├── src/                    API, auth, validación, imágenes y errores
+│   └── tests/                  validación, imágenes e integración
+├── docs/                       informe de implementación y auditoría
+├── compose.yaml                PostgreSQL local opcional con Docker
+└── render.yaml                 frontend + API + PostgreSQL en Render
+```
+
+Prisma y su cliente están fijados a la misma versión 6.12.0 para reproducibilidad y compatibilidad con el schema y las migraciones comprobadas. Los lockfiles de client y server deben conservarse.
+
+## Instalación y base de datos local
+
+Requisitos: Node.js 22 o posterior, npm y PostgreSQL. Docker es opcional. No requiere una base de datos ni servicio pago para desarrollar localmente.
+
+1. Copiar `server/.env.example` a `server/.env` y `client/.env.example` a `client/.env`.
+2. Elegir una contraseña PostgreSQL, un secreto JWT aleatorio y las credenciales iniciales del administrador. Configurar Cloudinary para probar subidas reales.
+3. Crear una base `entre_lineas` en PostgreSQL (pgAdmin o `CREATE DATABASE entre_lineas;`). Actualizar `DATABASE_URL` con usuario, contraseña y puerto reales. Codificar caracteres especiales de la contraseña si van en la URL.
+
+Alternativa con Docker, desde la raíz, después de completar `POSTGRES_PASSWORD` en `server/.env`:
 
 ```sh
+docker compose --env-file server/.env up -d
+```
+
+El volumen conserva los datos. Cambiar la contraseña del `.env` después de crear el volumen no cambia automáticamente la contraseña de PostgreSQL.
+
+Instalar y aplicar Prisma:
+
+```sh
+cd server
+npm install
+npx prisma format
+npx prisma generate
+npx prisma migrate dev
+npm run seed
+npm run dev
+```
+
+Para aplicar únicamente las migraciones incluidas, sin crear otras, usar `npx prisma migrate deploy`. `migrate dev` necesita una base local y permisos para crear la shadow database; **no usarlo contra producción**.
+
+En otra terminal:
+
+```sh
+cd client
 npm install
 npm run dev
 ```
 
-Abrir la dirección que indique Vite (por defecto http://localhost:5173).
+Abrir `http://localhost:5173`. La API local corre en el puerto 3001. Con `VITE_API_URL` vacío, el proxy de desarrollo de Vite envía `/api` al backend. En local, `CLIENT_URL` debe coincidir exactamente con el origen usado para abrir Vite. Si cambia su puerto, actualizar esta variable o liberar 5173.
 
-```sh
-npm run build
-npm run preview
-npm test
-```
+Para inspeccionar la base: `cd server` y `npx prisma studio`.
 
-El build queda en `dist/`. No abrir `index.html` con doble clic: usar el servidor de Vite.
+## Variables de entorno
 
-Pruebas de navegador: `npm run test:e2e` (requiere Microsoft Edge instalado). En otro sistema cambiar `channel: 'msedge'` en `playwright.config.js` por un navegador instalado o instalar Chromium con `npx playwright install chromium` y quitar `channel`.
+| Variable | Dónde | Uso |
+| --- | --- | --- |
+| `DATABASE_URL` | server | Conexión PostgreSQL. Internal URL en Render; External URL desde tu PC |
+| `JWT_SECRET` | server | Secreto aleatorio de al menos 32 caracteres; sin valor público predeterminado |
+| `CLIENT_URL` | server | Origen exacto permitido por CORS, por ejemplo `https://TU-SITIO.onrender.com` |
+| `PORT` | server | 3001 en local; Render la proporciona |
+| `NODE_ENV` | server | `development` en local, `production` en Render |
+| `CLOUDINARY_CLOUD_NAME` | server | Nombre del cloud de Cloudinary |
+| `CLOUDINARY_API_KEY` | server | Clave de Cloudinary, solo backend |
+| `CLOUDINARY_API_SECRET` | server | Secreto de Cloudinary, solo backend |
+| `ADMIN_NAME` | server / seed | Nombre del administrador inicial |
+| `ADMIN_EMAIL` | server / seed | Email del administrador inicial |
+| `ADMIN_PASSWORD` | server / seed | Contraseña inicial, mínimo 12 caracteres y máximo 72 bytes |
+| `RUN_MIGRATIONS` | server | `true` por defecto; `false` si las migraciones se aplican en otro paso |
+| `POSTGRES_PASSWORD` | Docker local | Contraseña usada por `compose.yaml` |
+| `VITE_API_URL` | client | URL del backend **sin** `/api`, por ejemplo `https://TU-API.onrender.com` |
 
-## Funcionalidades
+Generar un secreto: `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`.
 
-- Inicio con hero, recomendados y cuatro categorías de cuatro obras.
-- Búsqueda difusa por título, género, categoría y creadores; normaliza tildes, espacios y mayúsculas. Probá `señor anios`.
-- Explorar con filtros inmediatos por categoría y género, sugerencias y recuperación de resultados vacíos.
-- Reseñas en ficha técnica, sinopsis, ventajas, inconvenientes y veredicto. Puntuación con número, estrella y texto.
-- Mi lista persistente. Quitar muestra Deshacer durante cinco segundos y restaura la posición original.
-- Panel accesible mediante dialog nativo: foco contenido, Escape y retorno al disparador. Fuentes locales, tres tamaños, tres contrastes y espaciado adicional; preferencias persistentes y restablecimiento.
-- HTML semántico, enlace para saltar contenido, labels, estados accesibles, foco visible, navegación por teclado y respeto de movimiento reducido.
-- Manejo de almacenamiento corrupto o bloqueado; mensajes si no se puede persistir.
-- Diseño adaptable a móviles, tablets y escritorio.
+No subir `.env`, tokens, contraseñas ni URLs privadas de base de datos a GitHub. Los únicos valores de configuración públicos del cliente deben usar el prefijo `VITE_`; no poner secretos con ese prefijo.
 
-Los datos se guardan solo en el navegador y origen actuales. No hay cuentas ni sincronización. Borrar los datos del sitio elimina la lista y preferencias. Verdana es una alternativa local para lectura cómoda; no es OpenDyslexic ni garantiza beneficios clínicos.
+## Administrador inicial y seed
 
-## Estructura
+Completá `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` en `server/.env` y ejecutá `npm run seed` dentro de server, o `npx prisma db seed`.
 
-`src/components/`: Header, SearchBar, ContentCard, FilterBar, AccessibilityPanel, Snackbar.
+- No hay credenciales predeterminadas de producción.
+- La contraseña se guarda como hash bcrypt de coste 12.
+- El seed inserta 16 reseñas publicadas con IDs y slugs originales para conservar los vínculos y las listas de la versión anterior.
+- Es idempotente: repetirlo conserva administradores existentes, contraseñas y reseñas editadas; no sobrescribe datos.
+- No ejecutarlo como proceso periódico: si borraste una de las obras iniciales, volver a sembrar el catálogo la vuelve a insertar.
+- Acceso: `/admin/login`. Dashboard: `/admin`. Sin registro público.
+- Tras crear el admin en producción, retirar `ADMIN_PASSWORD` de las variables del servicio y de cualquier equipo donde ya no sea necesaria.
+- Cambiar `ADMIN_PASSWORD` y repetir el seed **no cambia** la contraseña de un administrador existente. Para una recuperación usar acceso autorizado a la base y un hash nuevo; no existe endpoint público de recuperación.
 
-`src/pages/`: Home, Explore, Detail, Watchlist.
+## Modelos PostgreSQL
 
-`src/hooks/`: useAccessibility y useWatchlist.
+**Content:** `id`, `title`, `slug` único, `type` (`BOOK`, `MOVIE`, `GAME`, `SERIES`), `genre`, `year`, `imageUrl`, `imagePublicId`, `synopsis`, `rating`, listas `best` y `worst`, `verdict`, `status` (`DRAFT`, `PUBLISHED`), fechas, `recommended` y `version`.
 
-`src/data/content.js`: base conceptual Topico y propiedades de Libro, Pelicula, Juego y Serie. Se usan objetos de datos simples en vez de clases para facilitar serialización.
+Campos especializados opcionales en la base: `author/pages`, `director/duration`, `developer/platform`, `creator/seasons`. La API exige solo los correspondientes al tipo elegido y limpia los de otros tipos. Los borradores usan el formulario completo. Cada edición incrementa `version`; una edición sobre una versión antigua devuelve 409 y pide recargar.
 
-`src/lib/`: búsqueda y almacenamiento. `src/styles/global.css`: estilos y preferencias.
+**Admin:** `id`, `name`, `email` único, `passwordHash`, `createdAt`, `updatedAt`.
 
-`public/covers/`: 16 portadas locales. Para regenerarlas: `node scripts/generate-covers.mjs`.
+**ImageDeletion:** `id`, `publicId` único, `attempts`, `createdAt`. Cola técnica de limpieza remota.
 
-`tests/`: comprobaciones del catálogo, búsqueda y almacenamiento. `render.yaml`: configuración declarativa del despliegue. `package-lock.json`: dependencias reproducibles.
+## API REST
 
-## Subir a GitHub
+| Método | Ruta | Acceso |
+| --- | --- | --- |
+| GET | `/api/health` | Salud de API y conexión PostgreSQL |
+| GET | `/api/content` | Solo PUBLISHED; filtros `?type=MOVIE&genre=Drama` |
+| GET | `/api/content/type/:type` | Solo PUBLISHED de la categoría |
+| GET | `/api/content/:slug` | Detalle publicado; borrador/no existente devuelve 404 |
+| POST | `/api/auth/login` | `{email,password}`; devuelve JWT y perfil sin hash |
+| GET | `/api/auth/me` | JWT; verifica la sesión |
+| GET | `/api/admin/content` | JWT; todos los estados |
+| GET | `/api/admin/content/:id` | JWT; ficha para editar/previsualizar |
+| POST | `/api/admin/content` | JWT; crea reseña |
+| PUT | `/api/admin/content/:id` | JWT; edición completa, imagen opcional |
+| PATCH | `/api/admin/content/:id/status` | JWT; `{status,version}` |
+| DELETE | `/api/admin/content/:id` | JWT; `{version}` |
 
-Crear un repositorio vacío en GitHub, sin README inicial. Desde esta carpeta:
+Las rutas protegidas requieren `Authorization: Bearer TOKEN`. Creación y edición admiten `multipart/form-data`: campo `data` con JSON del formulario y campo `image` con un archivo. PUT sin imagen también admite JSON. Para crear, la imagen es obligatoria. No se aceptan URLs o public IDs de imágenes enviados arbitrariamente por el cliente.
 
-```sh
-git add .
-git commit -m "Implementar plataforma Entre líneas"
-git branch -M main
-git remote add origin https://github.com/TU_USUARIO/TU_REPOSITORIO.git
-git push -u origin main
-```
+Errores centralizados: `{message,fields?}`. Códigos principales: 400 validación, 401 sesión, 403 CORS, 404 no disponible, 409 conflicto de versión, 413 archivo grande, 429 límite de solicitudes, 502/503 proveedor/configuración de imágenes.
 
-La carpeta ya es un repositorio Git. Si ya existe `origin`, verificar `git remote -v` y usar el remoto correcto. `node_modules` y `dist` se excluyen mediante `.gitignore`.
+CORS autoriza un origen definido por `CLIENT_URL`, no `*`. No sustituye la autenticación. Helmet, límites de JSON/archivos y rate limiting protegen las rutas; login admite diez intentos por IP en quince minutos. Textos tratados como contenido plano y renderizados escapados por React; no se usa `dangerouslySetInnerHTML`.
 
-## Render: configuración exacta
+## Cloudinary
 
-En Render elegir **New → Static Site**, conectar el repositorio y configurar:
+Crear/configurar un cloud y copiar Cloud name, API Key y API Secret desde la consola a las variables **del servidor**. Las subidas usan el SDK Node firmado: no requieren un preset público ni claves en el frontend.
+
+Archivos admitidos: jpg/jpeg/png/webp hasta 5 MB; límite adicional de 25 millones de píxeles, reorientación y reducción a 1600 px, conversión a WebP sin conservar metadatos. Cada nueva imagen usa un public ID propio bajo `entre-lineas/`.
+
+Al editar sin archivo se conserva la imagen. Al reemplazar se confirma primero el cambio en PostgreSQL y luego se elimina la antigua. Si el proveedor está caído, la cola lo reintenta. Al eliminar una reseña ocurre lo mismo. No se usa almacenamiento permanente en el filesystem del backend.
+
+## Render: despliegue exacto
+
+La versión anterior era un único Static Site. Esta versión necesita **tres servicios** y cambiar el Root Directory del frontend existente a `client`. Actualizar esa configuración junto con el despliegue de esta versión.
+
+### 1. PostgreSQL
+
+En Render: **New → Postgres**, nombre `entre-lineas-db`, base `entre_lineas`. Elegir la misma región del backend. Copiar la **Internal Database URL** a `DATABASE_URL` del Web Service.
+
+La base Free de Render expira a los 30 días; sirve para demostraciones. Para conservar una instalación final a largo plazo se necesita un plan persistente apropiado. Ver límites actuales en [Render Free](https://render.com/docs/free).
+
+### 2. Backend
+
+**New → Web Service**, repositorio Dislexia y rama que contenga esta versión:
 
 | Campo | Valor |
 | --- | --- |
-| Name | entre-lineas (o uno disponible) |
-| Branch | main |
-| Root Directory | dejar vacío |
-| Build Command | `npm ci && npm run build` |
+| Runtime | Node |
+| Root Directory | `server` |
+| Build Command | `npm install && npx prisma generate` |
+| Start Command | `npm start` |
+| Health Check Path | `/api/health` |
+| `NODE_ENV` | `production` |
+| `NODE_VERSION` | `22.23.3` |
+
+Configurar DATABASE_URL, JWT_SECRET, CLIENT_URL y las tres variables Cloudinary. `CLIENT_URL` debe ser la URL HTTPS del frontend (sin rutas). No configurar PORT manualmente en Render.
+
+`npm start` aplica `prisma migrate deploy` antes de escuchar solicitudes y falla si la migración no se puede aplicar. No crea administradores automáticamente ni recrea reseñas. Alternativamente, aplicar migraciones en un paso de despliegue disponible en tu plan y poner `RUN_MIGRATIONS=false`.
+
+### 3. Seed de producción
+
+Si tu plan dispone de Shell, ejecutar desde el servicio: `npm run seed`, con las tres variables ADMIN completas. En planes sin Shell, hacerlo desde tu PC: configurar temporalmente en `server/.env` la **External Database URL** de Render (con SSL según la URL proporcionada), las variables ADMIN y ejecutar:
+
+```sh
+cd server
+npx prisma generate
+npx prisma migrate deploy
+npm run seed
+```
+
+Restaurar luego la conexión local. No pegar credenciales en comandos que queden en el historial ni en GitHub. Restringir el acceso externo de la base después de completar este paso si corresponde.
+
+### 4. Frontend
+
+Crear un **Static Site** o actualizar el sitio anterior:
+
+| Campo | Valor |
+| --- | --- |
+| Root Directory | `client` |
+| Build Command | `npm install && npm run build` |
 | Publish Directory | `dist` |
-| Variables de entorno | ninguna |
+| `VITE_API_URL` | `https://TU-API.onrender.com` |
+| `NODE_VERSION` | `22.23.3` |
 
-En **Redirects/Rewrites**, agregar **Source** `/*`, **Destination** `/index.html`, **Action** `Rewrite`. Esto permite recargar `/explorar`, `/mi-lista` y `/resena/anillos` sin un 404.
+En Redirects/Rewrites: Source `/*`, Destination `/index.html`, Action **Rewrite**. Las rutas `/admin/login`, `/admin`, `/explorar` y `/resena/:slug` necesitan esa regla.
 
-También se incluye `render.yaml` para desplegar mediante **New → Blueprint**. Ese archivo incluye el build, directorio publicado y rewrite.
+Los valores Vite se incorporan al build. Cambiar `VITE_API_URL` requiere **rebuild**, no solo reiniciar. Luego comprobar `/api/health`, catálogo, login y subida de una imagen real.
 
-Documentación oficial: [Static Sites](https://render.com/docs/static-sites) y [Redirects and Rewrites](https://render.com/docs/redirects-rewrites).
+También se incluye `render.yaml` para **New → Blueprint**, con los tres recursos, migraciones al arrancar, rewrite y secretos configurables. Los nombres/URLs finales pueden variar por disponibilidad; completar CLIENT_URL y VITE_API_URL con las URLs realmente asignadas. Aplicar el seed sigue siendo un paso separado.
 
-## Verificación manual
+Referencias oficiales: [Node/Express](https://render.com/docs/deploy-node-express-app), [Static Sites](https://render.com/docs/static-sites), [Monorepos](https://render.com/docs/monorepo-support), [variables](https://render.com/docs/configure-environment-variables), [Prisma Migrate](https://docs.prisma.io/docs/cli/migrate) y [Cloudinary Node](https://cloudinary.com/documentation/node_image_and_video_upload).
 
-1. Buscar `señor anios`; abrir la sugerencia y comprobar las cinco secciones.
-2. Aplicar una categoría y un género, limpiar filtros y comprobar resultados vacíos.
-3. Agregar dos obras a Mi lista, recargar y comprobar persistencia.
-4. Quitar una obra, pulsar Deshacer antes de cinco segundos y verificar su posición. Volver a quitar y dejar expirar el aviso.
-5. Cambiar todas las preferencias, recargar y restablecer. Abrir/cerrar con teclado y Escape.
-6. Revisar a 375, 768 y 1440 px; con texto muy grande comprobar navegación, cards y ausencia de desbordamiento.
+## Compilación y pruebas
 
-No se ha publicado en una cuenta de GitHub o Render: los archivos están listos para hacerlo con las credenciales del propietario.
+```sh
+cd client
+npm run build
+npm test
+```
+
+```sh
+cd server
+npx prisma generate
+npm test
+npm run test:integration
+npm run test:stack
+```
+
+`test:integration` crea un PostgreSQL real temporal con `embedded-postgres`, aplica la migración, ejecuta el seed dos veces y comprueba la API con Supertest. No usa tu DATABASE_URL ni tu administrador. Puerto de pruebas: 55432; debe estar libre.
+
+`test:stack` agrega pruebas de navegador para la experiencia pública y administrativa. Requiere instalar dependencias de ambas carpetas y Microsoft Edge. En otro sistema configurar `PLAYWRIGHT_CHANNEL` para un canal disponible. Las pruebas dejan capturas en `client/test-results/` y clusters de prueba detenidos en `server/.test-db/`, ambos ignorados por Git. No modifican una base de producción.
+
+Cloudinary se sustituye por un adaptador controlado solo dentro del harness de pruebas; se usa PostgreSQL real y procesamiento real de imágenes. Otra prueba verifica el contrato de llamadas del SDK. La conexión a una cuenta real requiere tus variables y una prueba manual de subida, reemplazo y eliminación.
+
+Para el frontend aislado: `cd client` y `npm run test:e2e`; se simulan respuestas públicas y se omite la prueba del panel real. Para comprobar todo usar `server/npm run test:stack`.
+
+`npm run preview` en client muestra el build; para conectarlo localmente definir `VITE_API_URL` antes de compilar o usar un proxy externo. El proxy de Vite solo aplica a desarrollo.
+
+## Conservación de la experiencia
+
+Fuzzy search (por ejemplo `señor anios`), filtros, cards, reseñas por secciones, accesibilidad y Deshacer siguen disponibles. La clave de Mi lista conserva los IDs originales del seed. Obras eliminadas o pasadas a borrador aparecen como no disponibles con una opción para quitarlas; no rompen la lista ni se eliminan silenciosamente. Las preferencias se guardan con las mismas claves originales.
+
+Cambiar el dominio del sitio cambia el origen de localStorage: las preferencias de otro dominio no se transfieren automáticamente.
+
+## GitHub y pasos pendientes
+
+No subir secretos ni `node_modules`, `dist` o las bases de pruebas. Revisar los cambios y publicarlos en una rama; preparar primero la configuración Render para la nueva estructura.
+
+El código no provisiona cuentas externas. Para desplegar faltan tus variables PostgreSQL/Cloudinary/admin, los servicios Render y el seed de producción. [Informe detallado de auditoría](docs/IMPLEMENTACION.md).

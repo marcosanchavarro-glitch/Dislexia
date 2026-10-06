@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: entre_lineas
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definí POSTGRES_PASSWORD en server/.env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - entre-lineas-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d entre_lineas"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  entre-lineas-db:
