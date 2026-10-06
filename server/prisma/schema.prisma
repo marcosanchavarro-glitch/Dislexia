@@ -29,6 +29,7 @@ model Admin {
 }
 
 model Content {
+  reviews       CommunityReview[]
   id            String            @id @default(cuid())
   title         String
   slug          String            @unique
@@ -58,6 +59,118 @@ model Content {
 
   @@index([status, type])
   @@index([genre])
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum CommunityStatus {
+  PUBLISHED
+  HIDDEN
+  DELETED
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+  ACTION_TAKEN
+}
+
+model User {
+  id             String                 @id @default(cuid())
+  username       String                 @unique
+  email          String                 @unique
+  passwordHash   String
+  avatarUrl      String?
+  avatarPublicId String?
+  bio            String?
+  status         UserStatus             @default(ACTIVE)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  reviews        CommunityReview[]
+  replies        ReviewReply[]
+  helpful        ReviewHelpful[]
+  reports        Report[]
+  accessibility  AccessibilitySettings?
+}
+
+model AccessibilitySettings {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fontMode  String   @default("default")
+  fontSize  String   @default("normal")
+  contrast  String   @default("normal")
+  spacing   Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+}
+
+model CommunityReview {
+  id               String          @id @default(cuid())
+  userId           String
+  contentId        String
+  user             User            @relation(fields: [userId], references: [id])
+  content          Content         @relation(fields: [contentId], references: [id], onDelete: Restrict)
+  rating           Int
+  title            String?
+  body             String
+  containsSpoilers Boolean         @default(false)
+  status           CommunityStatus @default(PUBLISHED)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  replies          ReviewReply[]
+  helpful          ReviewHelpful[]
+  reports          Report[]
+
+  @@unique([userId, contentId])
+  @@index([contentId, status, createdAt])
+}
+
+model ReviewReply {
+  id               String          @id @default(cuid())
+  reviewId         String
+  userId           String
+  review           CommunityReview @relation(fields: [reviewId], references: [id])
+  user             User            @relation(fields: [userId], references: [id])
+  body             String
+  containsSpoilers Boolean         @default(false)
+  status           CommunityStatus @default(PUBLISHED)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  reports          Report[]
+
+  @@index([reviewId, status, createdAt])
+}
+
+model ReviewHelpful {
+  userId    String
+  reviewId  String
+  user      User            @relation(fields: [userId], references: [id])
+  review    CommunityReview @relation(fields: [reviewId], references: [id])
+  createdAt DateTime        @default(now())
+
+  @@id([userId, reviewId])
+}
+
+model Report {
+  id             String           @id @default(cuid())
+  reporterUserId String
+  reporter       User             @relation(fields: [reporterUserId], references: [id])
+  reviewId       String?
+  replyId        String?
+  review         CommunityReview? @relation(fields: [reviewId], references: [id])
+  reply          ReviewReply?     @relation(fields: [replyId], references: [id])
+  reason         String
+  description    String?
+  status         ReportStatus     @default(PENDING)
+  createdAt      DateTime         @default(now())
+  resolvedAt     DateTime?
+
+  @@index([status, createdAt])
 }
 
 // Cola persistente: permite reintentar eliminaciones si Cloudinary está caído.

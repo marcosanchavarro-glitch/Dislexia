@@ -24,10 +24,14 @@ test('Búsqueda, lista persistente, deshacer, reseña y filtros', async ({ page 
   await page.getByRole('link', { name: /Mi lista/ }).click();
   await page.reload();
   await expect(page.locator('.card')).toHaveCount(1);
+  // La expiración se verifica en otra prueba; acá evitamos que la carga de la máquina agote el tiempo para deshacer.
+  await page.clock.install();
+  await page.clock.pauseAt(new Date());
   await page.getByRole('button', { name: 'Quitar de pendientes: El Señor de los Anillos' }).click();
   await expect(page.locator('.card')).toHaveCount(0);
   await page.getByRole('button', { name: 'Deshacer' }).click();
   await expect(page.locator('.card')).toHaveCount(1);
+  await page.clock.resume();
   await page.getByRole('link', { name: 'Ver reseña' }).click();
   for (const label of ['Ficha técnica', 'Sinopsis', 'Lo mejor', 'Lo peor', 'Veredicto final'])
     await expect(page.getByRole('heading', { name: new RegExp(label) })).toBeVisible();

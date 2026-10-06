@@ -99,6 +99,9 @@ export default function Dashboard({ onChanged }) {
           <p>Creá, cuidá y compartí historias que valen el tiempo.</p>
         </div>
         <div className="admin-heading-actions">
+          <Link className="secondary" to="/admin/comunidad">
+            Comunidad
+          </Link>
           <Link className="primary" to="/admin/nueva">
             <Plus size={18} />
             Nueva reseña

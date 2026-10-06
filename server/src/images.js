@@ -4,16 +4,19 @@ import sharp from 'sharp';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from './errors.js';
 const formats = { 'image/jpeg': ['jpg', 'jpeg'], 'image/png': ['png'], 'image/webp': ['webp'] };
-export const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 1, fieldSize: 100000 },
-  fileFilter(req, file, callback) {
-    const extension = file.originalname.split('.').pop().toLowerCase();
-    if (!formats[file.mimetype]?.includes(extension))
-      return callback(new HttpError(400, 'Elegí una imagen JPG, JPEG, PNG o WebP.'));
-    callback(null, true);
-  },
-}).single('image');
+const imageUpload = (fields) =>
+  multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024, files: 1, fields, fieldSize: 100000 },
+    fileFilter(req, file, callback) {
+      const extension = file.originalname.split('.').pop().toLowerCase();
+      if (!formats[file.mimetype]?.includes(extension))
+        return callback(new HttpError(400, 'Elegí una imagen JPG, JPEG, PNG o WebP.'));
+      callback(null, true);
+    },
+  }).single('image');
+export const upload = imageUpload(1);
+export const profileUpload = imageUpload(2);
 export async function prepareImage(file) {
   try {
     const image = sharp(file.buffer, { limitInputPixels: 25000000, animated: false });

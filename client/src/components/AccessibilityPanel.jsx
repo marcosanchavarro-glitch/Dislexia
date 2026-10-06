@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { X, RotateCcw } from 'lucide-react';
+import { useUser } from '../context/UserContext';
 export default function AccessibilityPanel({ open, onClose, settings }) {
+  const { user } = useUser();
   const ref = useRef(null);
   useEffect(() => {
     const dialog = ref.current;
@@ -21,7 +23,10 @@ export default function AccessibilityPanel({ open, onClose, settings }) {
         </button>
       </div>
       <p>
-        Ajustá la experiencia a lo que necesitás. Tus preferencias se guardan en este navegador.
+        Ajustá la experiencia a lo que necesitás.{' '}
+        {user
+          ? 'Tus preferencias se guardan en tu cuenta y en este navegador.'
+          : 'Tus preferencias se guardan en este navegador.'}
       </p>
       {[
         [
@@ -53,7 +58,12 @@ export default function AccessibilityPanel({ open, onClose, settings }) {
       ].map(([key, label, options]) => (
         <label className="setting" key={key}>
           {label}
-          <select aria-label={label} value={p[key]} onChange={(e) => update(key, e.target.value)}>
+          <select
+            disabled={!settings.ready}
+            aria-label={label}
+            value={p[key]}
+            onChange={(e) => update(key, e.target.value)}
+          >
             {options.map(([value, text]) => (
               <option key={value} value={value}>
                 {text}
@@ -64,6 +74,7 @@ export default function AccessibilityPanel({ open, onClose, settings }) {
       ))}
       <label className="spacing-option">
         <input
+          disabled={!settings.ready}
           type="checkbox"
           checked={p.spacing}
           onChange={(e) => update('spacing', e.target.checked)}
@@ -75,7 +86,8 @@ export default function AccessibilityPanel({ open, onClose, settings }) {
         ni garantiza un efecto clínico sobre la dislexia.
       </p>
       {error && <p role="status">{error}</p>}
-      <button className="secondary" onClick={reset}>
+      {!settings.ready && <p role="status">Cargando tus preferencias…</p>}
+      <button className="secondary" disabled={!settings.ready} onClick={reset}>
         <RotateCcw size={17} />
         Restablecer configuración
       </button>

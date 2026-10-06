@@ -3,6 +3,7 @@ import { ArrowLeft, Plus, Check, Star } from 'lucide-react';
 import { types } from '../data/content';
 import { useContentDetail } from '../hooks/useContent';
 import ApiState from '../components/ApiState';
+import Community from '../components/Community';
 export default function Detail({ ids, onToggle }) {
   const { slug } = useParams();
   const { item, loading, error, reload } = useContentDetail(slug);
@@ -115,6 +116,7 @@ export default function Detail({ ids, onToggle }) {
           </section>
         </div>
       </div>
+      <Community key={item.id} contentId={item.id} />
     </section>
   );
 }

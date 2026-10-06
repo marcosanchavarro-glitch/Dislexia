@@ -1,0 +1,139 @@
+.community-section {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border, #cdd7cd);
+}
+.community-card {
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #cdd7cd);
+  border-radius: 16px;
+  padding: 1.4rem;
+  margin: 1.2rem 0;
+  min-width: 0;
+}
+.community-author,
+.community-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.8rem 0;
+}
+.community-author small {
+  display: block;
+}
+.user-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e6eee2;
+  color: #254c39;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+.community-stars {
+  margin-left: auto;
+}
+.community-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.community-form {
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  max-width: 720px;
+}
+.community-form label {
+  display: grid;
+  gap: 0.4rem;
+}
+.community-form input:not([type='checkbox']),
+.community-form textarea,
+.community-form select,
+.community-actions select {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border, #b8c8b9);
+  background: var(--surface, #fff);
+  color: inherit;
+  border-radius: 8px;
+  font: inherit;
+}
+.community-form textarea {
+  min-height: 130px;
+  resize: vertical;
+}
+.community-form .community-check {
+  display: flex;
+  align-items: center;
+}
+.community-replies {
+  margin: 1rem 0 0 1rem;
+  border-left: 2px solid #cdd7cd;
+  padding-left: 1rem;
+}
+.community-reply {
+  padding: 1rem 0;
+  border-bottom: 1px solid #cdd7cd;
+}
+.spoiler {
+  background: var(--bg, #f0f4eb);
+  padding: 1rem;
+  border-radius: 10px;
+}
+.user-auth {
+  max-width: 760px;
+}
+.user-nav {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.user-nav a,
+.user-nav button {
+  font-size: 0.85rem;
+}
+.header-inner {
+  flex-wrap: wrap;
+}
+.community-actions button {
+  max-width: 100%;
+}
+[data-contrast='high'] .community-card,
+[data-contrast='high'] .community-form input,
+[data-contrast='high'] .community-form textarea,
+[data-contrast='high'] .community-form select,
+[data-contrast='high'] .spoiler {
+  background: #fff;
+  color: #111;
+  border-color: #111;
+}
+@media (max-width: 600px) {
+  .community-card {
+    padding: 1rem;
+  }
+  .community-author {
+    gap: 0.5rem;
+  }
+  .community-stars {
+    width: 100%;
+    margin-left: 0;
+  }
+  .community-replies {
+    margin-left: 0;
+    padding-left: 0.7rem;
+  }
+  .community-actions button {
+    font-size: 0.9rem;
+  }
+  .user-nav {
+    width: 100%;
+  }
+}

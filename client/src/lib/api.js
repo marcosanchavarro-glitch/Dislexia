@@ -24,11 +24,27 @@ export class ApiError extends Error {
     this.fields = fields;
   }
 }
-export async function api(path, { admin = false, signal, ...options } = {}) {
+export function getUserToken() {
+  try {
+    return sessionStorage.getItem('entre-lineas-user-session') || userMemory;
+  } catch {
+    return userMemory;
+  }
+}
+let userMemory = null;
+export function setUserToken(token) {
+  userMemory = token;
+  try {
+    if (token) sessionStorage.setItem('entre-lineas-user-session', token);
+    else sessionStorage.removeItem('entre-lineas-user-session');
+  } catch {}
+}
+export async function api(path, { admin = false, user = false, signal, ...options } = {}) {
   const headers = new Headers(options.headers);
   if (options.body && !(options.body instanceof FormData))
     headers.set('Content-Type', 'application/json');
   if (admin && getToken()) headers.set('Authorization', `Bearer ${getToken()}`);
+  if (user && getUserToken()) headers.set('Authorization', `Bearer ${getUserToken()}`);
   let response;
   try {
     response = await fetch(`${base}/api${path}`, { ...options, signal, headers });
@@ -50,6 +66,10 @@ export async function api(path, { admin = false, signal, ...options } = {}) {
     );
   }
   if (!response.ok) {
+    if (response.status === 401 && user) {
+      setUserToken(null);
+      window.dispatchEvent(new Event('user-session-expired'));
+    }
     if (response.status === 401 && admin) {
       setToken(null);
       window.dispatchEvent(new Event('admin-session-expired'));

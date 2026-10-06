@@ -12,6 +12,9 @@ import Login from './pages/admin/Login';
 import Dashboard from './pages/admin/Dashboard';
 import Editor from './pages/admin/Editor';
 import Preview from './pages/admin/Preview';
+import UserLogin from './pages/UserLogin';
+import Profile from './pages/Profile';
+import Moderation from './pages/admin/Moderation';
 import { useWatchlist } from './hooks/useWatchlist';
 import { useAccessibility } from './hooks/useAccessibility';
 import { useContent } from './hooks/useContent';
@@ -85,7 +88,11 @@ export default function App() {
           <Route path="/mi-lista" element={publicPage(<Watchlist {...props} />)} />
           <Route path="/resena/:slug" element={<Detail {...props} />} />
           <Route path="/admin/login" element={<Login />} />
+          <Route path="/login" element={<UserLogin />} />
+          <Route path="/register" element={<UserLogin register />} />
+          <Route path="/profile/:username" element={<Profile />} />
           <Route element={<ProtectedRoute />}>
+            <Route path="/admin/comunidad" element={<Moderation />} />
             <Route path="/admin" element={<Dashboard onChanged={catalog.reload} />} />
             <Route path="/admin/nueva" element={<Editor onChanged={catalog.reload} />} />
             <Route path="/admin/editar/:id" element={<Editor onChanged={catalog.reload} />} />

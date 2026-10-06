@@ -9,6 +9,7 @@ import { authMiddleware, tokenOptions } from './auth.js';
 import { HttpError, errorHandler } from './errors.js';
 import { typeValues, parseContent, parseVersion, loginSchema, statusSchema } from './validation.js';
 import { upload, enqueueDeletion, drainDeletions } from './images.js';
+import { communityRouter } from './community.js';
 const slugify = (text) =>
   text
     .normalize('NFD')
@@ -48,6 +49,7 @@ export function createApp({ prisma, images, config }) {
     }),
   );
   const requireAdmin = authMiddleware(prisma, config.JWT_SECRET);
+  app.use('/api', communityRouter({ prisma, images, config, requireAdmin }));
   const cleanup = () =>
     drainDeletions(prisma, images).catch(() => console.error('Limpieza de imágenes pendiente.'));
   const compensateUpload = async (publicId) => {
@@ -98,12 +100,10 @@ export function createApp({ prisma, images, config }) {
       const admin = await prisma.admin.findUnique({ where: { email } });
       const matches = await bcrypt.compare(password, admin?.passwordHash || dummyHash);
       if (!admin || !matches) throw new HttpError(401, 'Email o contraseña incorrectos.');
-      res
-        .set('Cache-Control', 'no-store')
-        .json({
-          token: jwt.sign({}, config.JWT_SECRET, { ...tokenOptions, subject: admin.id }),
-          admin: { id: admin.id, name: admin.name, email: admin.email },
-        });
+      res.set('Cache-Control', 'no-store').json({
+        token: jwt.sign({}, config.JWT_SECRET, { ...tokenOptions, subject: admin.id }),
+        admin: { id: admin.id, name: admin.name, email: admin.email },
+      });
     },
   );
   app.get('/api/auth/me', requireAdmin, (req, res) =>
@@ -181,6 +181,11 @@ export function createApp({ prisma, images, config }) {
     await prisma.$transaction(async (db) => {
       const previous = await db.content.findUnique({ where: { id: req.params.id } });
       if (!previous) throw new HttpError(404, 'La reseña ya no existe.');
+      if (await db.communityReview.count({ where: { contentId: previous.id } }))
+        throw new HttpError(
+          409,
+          'Este contenido tiene comunidad. Pasalo a borrador para conservar el historial de moderación.',
+        );
       const deleted = await db.content.deleteMany({ where: { id: previous.id, version } });
       if (!deleted.count)
         throw new HttpError(409, 'La reseña cambió en otra sesión. Recargá el listado.');

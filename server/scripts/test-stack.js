@@ -8,6 +8,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
 import { createApp } from '../src/app.js';
 import { runIntegration } from '../tests/api.integration.js';
+import { runCommunity } from '../tests/community.integration.js';
 import { prepareImage } from '../src/images.js';
 export async function runStack(browser = false) {
   const require = createRequire(import.meta.url);
@@ -67,6 +68,7 @@ export async function runStack(browser = false) {
       email: env.ADMIN_EMAIL,
       password: env.ADMIN_PASSWORD,
     });
+    await runCommunity({ app, prisma, email: env.ADMIN_EMAIL, password: env.ADMIN_PASSWORD });
     if (browser) {
       server = app.listen(3001, '127.0.0.1');
       await once(server, 'listening');

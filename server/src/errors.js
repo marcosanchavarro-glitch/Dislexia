@@ -19,7 +19,14 @@ export function errorHandler(error, req, res, next) {
   if (error.code === 'P2002')
     return res
       .status(409)
-      .json({ message: 'Ese identificador ya está en uso. Intentá nuevamente.' });
+      .json({
+        message: 'Ese identificador ya está en uso. Intentá nuevamente.',
+        ...(error.meta?.target?.includes('username')
+          ? { fields: { username: ['Ese nombre ya está en uso.'] } }
+          : error.meta?.target?.includes('email')
+            ? { fields: { email: ['Ese email ya está registrado.'] } }
+            : {}),
+      });
   if (error.code === 'P2025') return res.status(404).json({ message: 'La reseña ya no existe.' });
   if (error.type === 'entity.too.large')
     return res.status(413).json({ message: 'El formulario supera el tamaño permitido.' });
@@ -27,11 +34,9 @@ export function errorHandler(error, req, res, next) {
     return res.status(400).json({ message: 'El JSON enviado no es válido.' });
   const status = error.status || 500;
   if (status >= 500) console.error('Error API:', error.code || error.name);
-  res
-    .status(status)
-    .json({
-      message:
-        status >= 500 ? 'No pudimos completar la operación. Intentá nuevamente.' : error.message,
-      ...(error.fields ? { fields: error.fields } : {}),
-    });
+  res.status(status).json({
+    message:
+      status >= 500 ? 'No pudimos completar la operación. Intentá nuevamente.' : error.message,
+    ...(error.fields ? { fields: error.fields } : {}),
+  });
 }
