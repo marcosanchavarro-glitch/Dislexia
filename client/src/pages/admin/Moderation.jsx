@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/api';
 export default function Moderation() {
+  const requestVersion = useRef(0);
   const [section, setSection] = useState('reports'),
     [query, setQuery] = useState(''),
     [page, setPage] = useState(1),
@@ -10,20 +11,26 @@ export default function Moderation() {
     [error, setError] = useState(''),
     [notice, setNotice] = useState('');
   const load = useCallback(async () => {
+    const current = ++requestVersion.current;
     setError('');
     try {
-      setData(
-        await api(`/admin/community/${section}?q=${encodeURIComponent(query)}&page=${page}`, {
+      const result = await api(
+        `/admin/community/${section}?q=${encodeURIComponent(query)}&page=${page}`,
+        {
           admin: true,
-        }),
+        },
       );
+      if (current === requestVersion.current) setData(result);
     } catch (e) {
-      setError(e.message);
+      if (current === requestVersion.current) setError(e.message);
     }
   }, [section, query, page]);
   useEffect(() => {
     setData(null);
     void load();
+    return () => {
+      requestVersion.current++;
+    };
   }, [load]);
   const states =
     section === 'users'
@@ -66,6 +73,7 @@ export default function Moderation() {
         }).map(([k, v]) => (
           <button
             className="secondary"
+            disabled={busy}
             key={k}
             aria-pressed={section === k}
             onClick={() => {
@@ -86,6 +94,7 @@ export default function Moderation() {
             ? 'en la explicación de reportes'
             : 'en el texto'}
         <input
+          disabled={busy}
           value={query}
           maxLength={100}
           onChange={(e) => {

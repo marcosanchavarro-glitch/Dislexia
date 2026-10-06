@@ -43,7 +43,10 @@ export function useAccessibility() {
         setPreferences(loaded);
       })
       .catch((e) => {
-        if (current === generation.current) setError(e.message);
+        if (current === generation.current) {
+          lastSynced.current = JSON.stringify(preferences);
+          setError(e.message);
+        }
       })
       .finally(() => {
         if (current === generation.current) {
