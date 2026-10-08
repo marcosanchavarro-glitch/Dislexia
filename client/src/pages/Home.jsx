@@ -2,8 +2,14 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles, BookOpen, Film, Gamepad2, Tv } from 'lucide-react';
 import { types } from '../data/content';
 import ContentCard from '../components/ContentCard';
+import { useState } from 'react';
+import { selectHeroBooks } from '../lib/heroBooks';
 const icons = { libro: BookOpen, pelicula: Film, juego: Gamepad2, serie: Tv };
+const heroFallbacks = ['/covers/dune.svg', '/covers/interestelar.svg', '/covers/zelda.svg'];
+const heroPositions = ['one', 'two', 'three'];
 export default function Home({ ids, onToggle, content }) {
+  const [failed, setFailed] = useState(new Set());
+  const books = selectHeroBooks(content, failed);
   return (
     <>
       <section className="hero">
@@ -25,14 +31,37 @@ export default function Home({ ids, onToggle, content }) {
           </Link>
           <span className="hero-footnote">Sin spoilers. Sin vueltas. A tu ritmo.</span>
         </div>
-        <div className="hero-art" aria-hidden="true">
+        <div className="hero-art">
           <div className="hero-scene">
-            <div className="art-orbit" />
-            <img className="hero-cover hero-cover-one" src="/covers/dune.svg" alt="" />
-            <img className="hero-cover hero-cover-two" src="/covers/interestelar.svg" alt="" />
-            <img className="hero-cover hero-cover-three" src="/covers/zelda.svg" alt="" />
+            <div className="art-orbit" aria-hidden="true" />
+            {heroPositions.map((position, index) => {
+              const book = books[index];
+              return book ? (
+                <Link
+                  key={`${book.id}:${book.imageUrl}`}
+                  className={`hero-cover hero-cover-${position}`}
+                  to={`/resena/${book.slug}`}
+                  aria-label={`Ver reseña de ${book.title}`}
+                >
+                  <img
+                    src={book.imageUrl}
+                    alt={`Portada de ${book.title}`}
+                    onError={() =>
+                      setFailed((previous) => new Set([...previous, `${book.id}:${book.imageUrl}`]))
+                    }
+                  />
+                </Link>
+              ) : (
+                <img
+                  key={position}
+                  className={`hero-cover hero-cover-${position}`}
+                  src={heroFallbacks[index]}
+                  alt=""
+                />
+              );
+            })}
           </div>
-          <div className="art-note">
+          <div className="art-note" aria-hidden="true">
             <Sparkles size={18} />
             <span>
               Una buena historia

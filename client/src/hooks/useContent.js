@@ -1,17 +1,30 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { api, adaptContent } from '../lib/api';
 export function useContent() {
+  const { pathname } = useLocation();
+  const previousPath = useRef(pathname);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
   const reload = useCallback(() => setRevision((value) => value + 1), []);
   useEffect(() => {
+    if (previousPath.current !== pathname && pathname === '/') reload();
+    previousPath.current = pathname;
+    const refresh = () => {
+      if (pathname === '/') reload();
+    };
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, [pathname, reload]);
+  useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
     setError('');
-    api('/content', { signal: controller.signal })
+    api('/content', { signal: controller.signal, cache: 'no-store' })
       .then((data) => {
+        if (controller.signal.aborted) return;
         setItems(data.map(adaptContent));
         setLoading(false);
       })

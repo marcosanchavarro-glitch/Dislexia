@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
 export default function ApiState({ loading, error, reload }) {
   return (
-    <div className="empty-state" aria-busy={loading}>
+    <div
+      className={`empty-state api-state${loading ? ' api-state-loading' : ''}`}
+      aria-busy={loading}
+    >
       {loading ? (
         <p role="status">Cargando historias…</p>
       ) : (

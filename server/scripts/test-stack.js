@@ -2,7 +2,7 @@ import EmbeddedPostgres from 'embedded-postgres';
 import { PrismaClient } from '@prisma/client';
 import { createRequire } from 'node:module';
 import { randomBytes, randomUUID } from 'node:crypto';
-import { mkdir, mkdtemp, cp, copyFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, cp, copyFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
@@ -80,7 +80,7 @@ export async function runStack(browser = false) {
     const images = {
       async upload(file) {
         await prepareImage(file);
-        return { imageUrl: '/covers/placeholder.svg', imagePublicId: `test/${randomUUID()}` };
+        return { imageUrl: `https://covers.example.test/${randomUUID()}.webp`, imagePublicId: `test/${randomUUID()}` };
       },
       async destroy(id) {
         destroyed.push(id);
@@ -111,26 +111,38 @@ export async function runStack(browser = false) {
       password: env.SUPER_ADMIN_PASSWORD,
     });
     if (browser) {
-      // Independent API/browser suites get fresh rate-limit stores, never weakened limits.
-      server = createApp({ prisma, images, config }).listen(3001, '127.0.0.1');
-      await once(server, 'listening');
       const clientRequire = createRequire(new URL('../../client/package.json', import.meta.url));
-      const child = spawn(
-        process.execPath,
-        [clientRequire.resolve('@playwright/test/cli'), 'test'],
-        {
-          cwd: resolve('../client'),
-          env: {
-            ...env,
-            STACK_TEST: 'true',
-            TEST_ADMIN_EMAIL: env.SUPER_ADMIN_EMAIL,
-            TEST_ADMIN_PASSWORD: env.SUPER_ADMIN_PASSWORD,
+      const specs = (await readdir('../client/tests/browser'))
+        .filter((name) => name.endsWith('.spec.js'))
+        .sort();
+      for (const spec of specs) {
+        server = createApp({ prisma, images, config }).listen(3001, '127.0.0.1');
+        await once(server, 'listening');
+        const child = spawn(
+          process.execPath,
+          [
+            clientRequire.resolve('@playwright/test/cli'),
+            'test',
+            spec,
+            '--output',
+            `test-results/stack/${spec.replace('.spec.js', '')}`,
+          ],
+          {
+            cwd: resolve('../client'),
+            env: {
+              ...env,
+              STACK_TEST: 'true',
+              TEST_ADMIN_EMAIL: env.SUPER_ADMIN_EMAIL,
+              TEST_ADMIN_PASSWORD: env.SUPER_ADMIN_PASSWORD,
+            },
+            stdio: 'inherit',
           },
-          stdio: 'inherit',
-        },
-      );
-      const [code] = await once(child, 'exit');
-      if (code !== 0) throw Error('Fallaron pruebas del navegador.');
+        );
+        const [code] = await once(child, 'exit');
+        if (code !== 0) throw Error('Fallaron pruebas del navegador.');
+        await new Promise((done) => server.close(done));
+        server = null;
+      }
     }
     console.log('Integración PostgreSQL completada.');
   } finally {

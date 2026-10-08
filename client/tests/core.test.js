@@ -9,6 +9,37 @@ const content = apiContent.map((item) => ({ ...item, type: mapping[item.type] })
 import { searchContent as search } from '../src/lib/search.js';
 const searchContent = (query) => search(query, content);
 import { readStorage, writeStorage } from '../src/lib/storage.js';
+import { selectHeroBooks } from '../src/lib/heroBooks.js';
+test('Hero: tres libros publicados, recomendados primero y solo portadas válidas', () => {
+  const book = (id, changes = {}) => ({
+    id,
+    slug: id,
+    type: 'libro',
+    status: 'PUBLISHED',
+    imageUrl: `https://images.example/${id}.webp`,
+    ...changes,
+  });
+  const items = [
+    book('a'),
+    book('draft', { status: 'DRAFT' }),
+    book('movie', { type: 'pelicula' }),
+    book('local', { imageUrl: '/covers/demo.svg' }),
+    book('invalid', { imageUrl: 'invalid' }),
+    book('b', { recommended: true }),
+    book('c'),
+    book('d'),
+  ];
+  assert.deepEqual(
+    selectHeroBooks(items).map((b) => b.id),
+    ['b', 'a', 'c'],
+  );
+  assert.deepEqual(
+    selectHeroBooks(items, new Set(['b:https://images.example/b.webp'])).map((b) => b.id),
+    ['a', 'c', 'd'],
+  );
+  for (let n = 0; n < 3; n++)
+    assert.equal(selectHeroBooks([book('a'), book('b')].slice(0, n)).length, n);
+});
 test('Catálogo con cuatro obras por tipo y fichas completas', () => {
   assert.equal(content.length, 16);
   for (const type of ['libro', 'pelicula', 'juego', 'serie'])

@@ -13,7 +13,9 @@ export default function Header({ query, onSearch, count, onAccessibility }) {
           <span className="brand-icon">
             <BookOpen size={23} />
           </span>
-          entre líneas<span className="brand-dot">.</span>
+          <span className="brand-name">
+            entre líneas<span className="brand-dot">.</span>
+          </span>
         </Link>
         <nav aria-label="Navegación principal">
           <NavLink to="/" end>

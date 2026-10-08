@@ -65,6 +65,22 @@ main,
 .dialog-heading > button {
   flex-shrink: 0;
 }
+.brand-name {
+  min-width: 0;
+}
+.brand-name .brand-dot {
+  margin-left: 1px;
+}
+.hero-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+.hero-cover:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
 .user-nav > span {
   overflow-wrap: anywhere;
 }
@@ -340,5 +356,138 @@ footer {
   }
   .reading-banner {
     padding: 20px;
+  }
+}
+
+/* Mobile composition uses named rows, sharing the same horizontal reference. */
+@media (max-width: 600px) {
+  :root {
+    --mobile-gutter: 16px;
+  }
+  main,
+  .header-inner {
+    width: 100%;
+    max-width: 100%;
+    margin-inline: auto;
+    padding-inline: var(--mobile-gutter);
+  }
+  .header {
+    border-bottom: 0;
+  }
+  .header::after {
+    content: '';
+    display: block;
+    margin-inline: var(--mobile-gutter);
+    border-bottom: 1px solid var(--line);
+  }
+  .header-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'brand access' 'account account' 'nav nav' 'search search';
+    gap: 8px 12px;
+    padding-block: 12px;
+  }
+  .header .brand {
+    grid-area: brand;
+    flex-wrap: nowrap;
+    gap: 8px;
+    justify-self: start;
+  }
+  .header .access-button {
+    grid-area: access;
+    justify-self: end;
+    margin: 0;
+    width: 44px;
+    padding: 10px;
+    justify-content: center;
+  }
+  .header .access-button span {
+    display: none;
+  }
+  .header .user-nav {
+    grid-area: account;
+    width: 100%;
+    margin: 0;
+    gap: 4px 12px;
+  }
+  .header nav {
+    grid-area: nav;
+    width: 100%;
+    margin: 0;
+    justify-content: center;
+    gap: 4px 16px;
+  }
+  .header nav a {
+    white-space: nowrap;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .header .count {
+    margin-left: 0;
+  }
+  .header .search {
+    grid-area: search;
+    width: 100%;
+    margin: 0;
+    padding: 9px 12px;
+  }
+  .header .search input {
+    line-height: inherit;
+  }
+  .header .search kbd {
+    display: none;
+  }
+  main {
+    padding-block: 20px 8px;
+  }
+  .hero {
+    min-height: 0;
+  }
+  .page-section,
+  .login-shell {
+    min-height: 0;
+  }
+  .page-section {
+    padding-top: 0;
+  }
+  .empty-state {
+    padding: 24px 16px;
+  }
+  .api-state-loading {
+    display: grid;
+    place-items: center;
+    min-height: 88px;
+    padding: 20px 16px;
+  }
+  .api-state-loading p {
+    margin: 0;
+  }
+  .catalog-section {
+    margin-top: 32px;
+  }
+  .section-heading {
+    margin-bottom: 16px;
+    gap: 12px;
+  }
+  footer {
+    width: calc(100% - 2 * var(--mobile-gutter));
+    max-width: 100%;
+    margin: 20px auto 0;
+    padding: 16px 0 24px;
+    gap: 8px 16px;
+    align-items: start;
+  }
+  footer small {
+    margin: 0;
+  }
+}
+@media (min-width: 390px) and (max-width: 600px) {
+  :root {
+    --mobile-gutter: 20px;
+  }
+}
+@media (max-width: 360px) {
+  :root[data-size='larger'] .hero h1 {
+    font-size: 2.1rem;
   }
 }
