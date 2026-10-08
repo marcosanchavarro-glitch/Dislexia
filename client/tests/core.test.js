@@ -10,6 +10,17 @@ import { searchContent as search } from '../src/lib/search.js';
 const searchContent = (query) => search(query, content);
 import { readStorage, writeStorage } from '../src/lib/storage.js';
 import { selectHeroBooks } from '../src/lib/heroBooks.js';
+import { loginDestination } from '../src/lib/loginDestination.js';
+test('Login único: destino por rol autenticado y retorno interno seguro', () => {
+  assert.equal(loginDestination({ role: 'USER' }), '/');
+  for (const role of ['EDITOR', 'ADMIN', 'SUPER_ADMIN']) {
+    assert.equal(loginDestination({ role }), '/admin');
+    assert.equal(loginDestination({ role }, '/admin/users'), '/admin/users');
+    assert.equal(loginDestination({ role }, 'https://evil.example'), '/admin');
+  }
+  assert.equal(loginDestination({ role: 'USER' }, '/admin'), '/');
+  assert.equal(loginDestination({ role: 'USER' }, '/resena/dune'), '/resena/dune');
+});
 test('Hero: tres libros publicados, recomendados primero y solo portadas válidas', () => {
   const book = (id, changes = {}) => ({
     id,

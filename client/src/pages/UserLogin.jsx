@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
+import { loginDestination } from '../lib/loginDestination';
 export default function UserLogin({ register = false }) {
   const { authenticate } = useUser(),
     navigate = useNavigate(),
@@ -24,17 +25,11 @@ export default function UserLogin({ register = false }) {
     }
     setBusy(true);
     try {
-      await authenticate(
+      const user = await authenticate(
         register ? 'register' : 'login',
         register ? values : { email: values.email, password: values.password },
       );
-      const next = location.state?.from;
-      navigate(
-        typeof next === 'string' &&
-          (next.startsWith('/resena/') || next === '/admin' || next.startsWith('/admin/'))
-          ? next
-          : '/',
-      );
+      navigate(loginDestination(user, location.state?.from), { replace: true });
     } catch (err) {
       setError(err.message);
       setFields(err.fields || {});
@@ -44,8 +39,16 @@ export default function UserLogin({ register = false }) {
   };
   return (
     <section className="page-section user-auth">
-      <span className="eyebrow">ENTRE LÍNEAS · COMUNIDAD</span>
+      <span className="eyebrow">
+        ENTRE LÍNEAS · {register ? 'COMUNIDAD' : 'ACCESO A TU CUENTA'}
+      </span>
       <h1>{register ? 'Creá tu cuenta' : 'Volvé a la conversación'}</h1>
+      {!register && (
+        <p>
+          Un mismo acceso para lectores, editores y administradores. Ingresá con el email y la
+          contraseña de tu cuenta.
+        </p>
+      )}
       <form className="community-form" onSubmit={submit}>
         {(register
           ? ['username', 'email', 'password', 'confirmPassword']
