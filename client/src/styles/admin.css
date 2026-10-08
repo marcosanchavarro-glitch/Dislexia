@@ -431,3 +431,53 @@ button:disabled {
     width: 100%;
   }
 }
+/* User management shares the editorial cards, spacing and type system. */
+.users-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) 1fr 1fr;
+  gap: 1rem;
+}
+.user-admin-heading {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.user-admin-heading > div {
+  min-width: 0;
+  flex: 1;
+}
+.user-admin-heading h1,
+.user-admin-heading h2 {
+  margin: 0;
+}
+.users-page p,
+.user-admin-heading h1,
+.user-admin-heading h2 {
+  overflow-wrap: anywhere;
+}
+.user-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.role-badge,
+.status-badge {
+  padding: 0.3rem 0.65rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border, #cdd8d0);
+  font-size: 0.8rem;
+  background: var(--surface, #f3f6ef);
+}
+.users-page > .eyebrow {
+  display: block;
+  margin-top: 1.5rem;
+}
+@media (max-width: 700px) {
+  .users-filters {
+    grid-template-columns: 1fr;
+  }
+  .user-badges {
+    width: 100%;
+  }
+}

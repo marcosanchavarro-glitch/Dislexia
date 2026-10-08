@@ -4,25 +4,44 @@ import bcrypt from 'bcrypt';
 import { readFile } from 'node:fs/promises';
 const prisma = new PrismaClient();
 try {
-  const name = process.env.ADMIN_NAME?.trim();
-  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  const password = process.env.ADMIN_PASSWORD;
-  if (
-    !name ||
-    !email ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
-    !password ||
-    password.length < 12 ||
-    Buffer.byteLength(password) > 72
-  )
-    throw new Error(
-      'Definí ADMIN_NAME, ADMIN_EMAIL y ADMIN_PASSWORD (12 caracteres como mínimo; 72 bytes como máximo).',
-    );
-  const existing = await prisma.admin.findUnique({ where: { email } });
-  if (!existing)
-    await prisma.admin.create({
-      data: { name, email, passwordHash: await bcrypt.hash(password, 12) },
-    });
+  const name = process.env.SUPER_ADMIN_NAME?.trim();
+  const username = process.env.SUPER_ADMIN_USERNAME?.trim().toLowerCase();
+  const email = process.env.SUPER_ADMIN_EMAIL?.trim().toLowerCase();
+  const password = process.env.SUPER_ADMIN_PASSWORD;
+  const configured = [name, username, email, password].some(Boolean);
+  if (configured) {
+    if (
+      !name ||
+      !username ||
+      !/^[a-z0-9_]{3,30}$/.test(username) ||
+      !email ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+      !password ||
+      password.length < 12 ||
+      Buffer.byteLength(password) > 72
+    )
+      throw new Error(
+        'Definí SUPER_ADMIN_NAME, SUPER_ADMIN_USERNAME, SUPER_ADMIN_EMAIL y SUPER_ADMIN_PASSWORD (12 caracteres; máximo 72 bytes).',
+      );
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing && existing.role !== 'SUPER_ADMIN')
+      throw new Error(
+        'La cuenta ya existe: asigná su rol desde otro Super Admin. El seed no eleva cuentas existentes.',
+      );
+    if (!existing)
+      await prisma.user.create({
+        data: {
+          name,
+          username,
+          email,
+          passwordHash: await bcrypt.hash(password, 12),
+          role: 'SUPER_ADMIN',
+          status: 'ACTIVE',
+        },
+      });
+  } else if (!(await prisma.user.count({ where: { role: 'SUPER_ADMIN', status: 'ACTIVE' } }))) {
+    throw new Error('Configurá las variables SUPER_ADMIN_* para crear el propietario inicial.');
+  }
   const items = JSON.parse(await readFile(new URL('./demo.json', import.meta.url), 'utf8'));
   await prisma.$transaction(
     items.map((item) =>
@@ -30,7 +49,7 @@ try {
     ),
   );
   console.log(
-    `Seed completado: ${items.length} reseñas iniciales; administrador ${existing ? 'existente conservado' : 'creado'}.`,
+    `Seed completado: ${items.length} reseñas iniciales; cuentas existentes conservadas.`,
   );
   if (process.env.NODE_ENV === 'development' && process.env.SEED_COMMUNITY === 'true') {
     const demoPassword = process.env.DEMO_USER_PASSWORD;

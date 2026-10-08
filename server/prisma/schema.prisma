@@ -20,42 +20,47 @@ enum PublicationStatus {
 }
 
 model Admin {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  // Archivo anterior: no participa en autenticación.
+  migratedUserId String?  @unique
+  migratedUser   User?    @relation(fields: [migratedUserId], references: [id], onDelete: Restrict)
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  passwordHash   String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model Content {
-  reviews       CommunityReview[]
-  id            String            @id @default(cuid())
-  title         String
-  slug          String            @unique
-  type          ContentType
-  genre         String
-  year          Int
-  imageUrl      String?
-  imagePublicId String?
-  synopsis      String
-  rating        Float
-  best          String[]
-  worst         String[]
-  verdict       String
-  status        PublicationStatus @default(DRAFT)
-  author        String?
-  pages         Int?
-  director      String?
-  duration      Int?
-  developer     String?
-  platform      String?
-  creator       String?
-  seasons       Int?
-  recommended   Boolean           @default(false)
-  version       Int               @default(1)
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  createdByUserId String?
+  createdBy       User?             @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  reviews         CommunityReview[]
+  id              String            @id @default(cuid())
+  title           String
+  slug            String            @unique
+  type            ContentType
+  genre           String
+  year            Int
+  imageUrl        String?
+  imagePublicId   String?
+  synopsis        String
+  rating          Float
+  best            String[]
+  worst           String[]
+  verdict         String
+  status          PublicationStatus @default(DRAFT)
+  author          String?
+  pages           Int?
+  director        String?
+  duration        Int?
+  developer       String?
+  platform        String?
+  creator         String?
+  seasons         Int?
+  recommended     Boolean           @default(false)
+  version         Int               @default(1)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   @@index([status, type])
   @@index([genre])
@@ -81,21 +86,48 @@ enum ReportStatus {
 }
 
 model User {
-  id             String                 @id @default(cuid())
-  username       String                 @unique
-  email          String                 @unique
-  passwordHash   String
-  avatarUrl      String?
-  avatarPublicId String?
-  bio            String?
-  status         UserStatus             @default(ACTIVE)
-  createdAt      DateTime               @default(now())
-  updatedAt      DateTime               @updatedAt
-  reviews        CommunityReview[]
-  replies        ReviewReply[]
-  helpful        ReviewHelpful[]
-  reports        Report[]
-  accessibility  AccessibilitySettings?
+  name             String?
+  role             Role                   @default(USER)
+  id               String                 @id @default(cuid())
+  username         String                 @unique
+  email            String                 @unique
+  passwordHash     String
+  avatarUrl        String?
+  avatarPublicId   String?
+  bio              String?
+  status           UserStatus             @default(ACTIVE)
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  reviews          CommunityReview[]
+  replies          ReviewReply[]
+  helpful          ReviewHelpful[]
+  reports          Report[]
+  accessibility    AccessibilitySettings?
+  editorialContent Content[]
+  legacyAdmins     Admin[]
+  auditActions     AdminAuditLog[]        @relation("AuditActor")
+  auditTargets     AdminAuditLog[]        @relation("AuditTarget")
+}
+
+enum Role {
+  USER
+  EDITOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+model AdminAuditLog {
+  id           String   @id @default(cuid())
+  actorUserId  String
+  targetUserId String?
+  actor        User     @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  target       User?    @relation("AuditTarget", fields: [targetUserId], references: [id], onDelete: Restrict)
+  action       String
+  metadata     Json
+  createdAt    DateTime @default(now())
+
+  @@index([targetUserId, createdAt])
+  @@index([actorUserId, createdAt])
 }
 
 model AccessibilitySettings {

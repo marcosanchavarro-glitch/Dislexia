@@ -88,7 +88,7 @@ test('Comunidad real: visitante, usuarios, perfil, conversación y moderación',
   await page.goto('/admin/login');
   await page.getByLabel('Email', { exact: true }).fill(process.env.TEST_ADMIN_EMAIL);
   await page.getByLabel('Contraseña', { exact: true }).fill(process.env.TEST_ADMIN_PASSWORD);
-  await page.getByRole('button', { name: 'Ingresar al panel' }).click();
+  await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click();
   await page.getByRole('link', { name: 'Comunidad', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Cuidemos la conversación.' })).toBeVisible();
   await page
@@ -96,11 +96,16 @@ test('Comunidad real: visitante, usuarios, perfil, conversación y moderación',
     .filter({ hasText: 'browser_reader_b' })
     .getByRole('button', { name: 'Ocultar reseña reportada' })
     .click();
-  await page.getByRole('button', { name: 'Usuarios', exact: true }).click();
-  const reader = page.locator('.community-card').filter({ hasText: 'browser_reader_a' });
-  await reader.getByRole('button', { name: 'Suspender', exact: true }).click();
-  await expect(reader).toContainText('SUSPENDED');
-  await reader.getByRole('button', { name: 'Restaurar usuario' }).click();
+  await page.getByRole('link', { name: 'Usuarios', exact: true }).click();
+  await page.getByRole('link', { name: 'browser_reader_a', exact: true }).click();
+  const reader = page.locator('.users-page');
+  await reader.getByRole('button', { name: 'Suspender usuario', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Confirmar cambio' }).click();
+  await expect(reader).toContainText('Suspendido');
+  await reader.getByRole('button', { name: 'Reactivar usuario' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Confirmar cambio' }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await page.goto('/admin/comunidad');
   await page.getByRole('button', { name: 'Reseñas', exact: true }).click();
   const review = page.locator('.community-card').filter({ hasText: 'browser_reader_a' });
   await review.getByRole('button', { name: 'Restaurar', exact: true }).click();

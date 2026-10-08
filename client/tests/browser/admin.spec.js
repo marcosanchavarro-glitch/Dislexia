@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 test('Rutas protegidas y errores de red recuperables', async ({ page }) => {
   await page.goto('/admin');
-  await expect(page).toHaveURL(/admin\/login/);
-  await expect(page.getByRole('heading', { name: 'Historias bien cuidadas.' })).toBeVisible();
+  await expect(page).toHaveURL(/login/);
+  await expect(page.getByRole('heading', { name: 'Volvé a la conversación' })).toBeVisible();
 });
 test('API caída ofrece reintento', async ({ page }) => {
   await page.route('**/api/content', (route) => route.abort());
@@ -11,12 +11,12 @@ test('API caída ofrece reintento', async ({ page }) => {
   await expect(page.getByRole('alert')).toContainText('No pudimos conectar');
 });
 test('Sesión inválida vuelve al login', async ({ page }) => {
-  await page.addInitScript(() => sessionStorage.setItem('entre-lineas-admin-session', 'invalid'));
+  await page.addInitScript(() => sessionStorage.setItem('entre-lineas-session', 'invalid'));
   await page.route('**/api/auth/me', (route) =>
     route.fulfill({ status: 401, json: { message: 'Sesión vencida' } }),
   );
   await page.goto('/admin');
-  await expect(page).toHaveURL(/admin\/login/);
+  await expect(page).toHaveURL(/login/);
 });
 test('Panel real: crear, previsualizar, publicar, editar, eliminar y responsive', async ({
   page,
@@ -25,7 +25,7 @@ test('Panel real: crear, previsualizar, publicar, editar, eliminar y responsive'
   await page.goto('/admin/login');
   await page.getByLabel('Email', { exact: true }).fill(process.env.TEST_ADMIN_EMAIL);
   await page.getByLabel('Contraseña', { exact: true }).fill(process.env.TEST_ADMIN_PASSWORD);
-  await page.getByRole('button', { name: 'Ingresar al panel' }).click();
+  await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'El próximo descubrimiento.' })).toBeVisible();
   for (const width of [375, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
@@ -45,13 +45,11 @@ test('Panel real: crear, previsualizar, publicar, editar, eliminar y responsive'
   await page.getByLabel('Lo peor, punto 1', { exact: true }).fill('Un inicio lento');
   await page.getByRole('button', { name: 'Agregar punto' }).first().click();
   await page.getByLabel('Lo mejor, punto 2', { exact: true }).fill('Personajes memorables');
-  await page
-    .getByLabel('Seleccionar imagen')
-    .setInputFiles({
-      name: 'portada.png',
-      mimeType: 'image/png',
-      buffer: await page.locator('.brand').screenshot(),
-    });
+  await page.getByLabel('Seleccionar imagen').setInputFiles({
+    name: 'portada.png',
+    mimeType: 'image/png',
+    buffer: await page.locator('.brand').screenshot(),
+  });
   await expect(page.getByAltText('Vista previa de la portada')).toBeVisible();
   await page.setViewportSize({ width: 375, height: 900 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -99,5 +97,5 @@ test('Panel real: crear, previsualizar, publicar, editar, eliminar y responsive'
   await page.getByRole('button', { name: 'Eliminar definitivamente', exact: true }).click();
   await expect(page.locator('tbody tr')).toHaveCount(0);
   await page.getByRole('button', { name: 'Salir', exact: true }).click();
-  await expect(page).toHaveURL(/admin\/login/);
+  await expect(page).toHaveURL(/login/);
 });

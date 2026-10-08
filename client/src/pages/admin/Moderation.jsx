@@ -33,16 +33,14 @@ export default function Moderation() {
     };
   }, [load]);
   const states =
-    section === 'users'
-      ? { ACTIVE: 'Restaurar usuario', SUSPENDED: 'Suspender', BANNED: 'Bloquear' }
-      : section === 'reports'
-        ? {
-            REVIEWED: 'Revisado',
-            DISMISSED: 'Descartar',
-            ACTION_TAKEN: 'Acción tomada',
-            PENDING: 'Pendiente',
-          }
-        : { PUBLISHED: 'Restaurar', HIDDEN: 'Ocultar', DELETED: 'Eliminar lógicamente' };
+    section === 'reports'
+      ? {
+          REVIEWED: 'Revisado',
+          DISMISSED: 'Descartar',
+          ACTION_TAKEN: 'Acción tomada',
+          PENDING: 'Pendiente',
+        }
+      : { PUBLISHED: 'Restaurar', HIDDEN: 'Ocultar', DELETED: 'Eliminar lógicamente' };
   const change = async (item, status) => {
     setBusy(true);
     try {
@@ -69,7 +67,6 @@ export default function Moderation() {
           reviews: 'Reseñas',
           replies: 'Respuestas',
           reports: 'Reportes',
-          users: 'Usuarios',
         }).map(([k, v]) => (
           <button
             className="secondary"
@@ -86,13 +83,11 @@ export default function Moderation() {
           </button>
         ))}
       </nav>
+      <Link className="secondary" to="/admin/users">
+        Usuarios
+      </Link>
       <label className="community-form">
-        Buscar{' '}
-        {section === 'users'
-          ? 'usuario'
-          : section === 'reports'
-            ? 'en la explicación de reportes'
-            : 'en el texto'}
+        Buscar {section === 'reports' ? 'en la explicación de reportes' : 'en el texto'}
         <input
           disabled={busy}
           value={query}

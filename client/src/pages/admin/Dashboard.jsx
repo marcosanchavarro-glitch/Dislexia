@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus, LogOut, Search, BookOpen, Film, Gamepad2, Tv, ArrowUpRight } from 'lucide-react';
 import { api } from '../../lib/api';
 import { normalize } from '../../lib/search';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, hasMinimumRole } from '../../context/AuthContext';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ApiState from '../../components/ApiState';
 const categories = {
@@ -94,14 +94,21 @@ export default function Dashboard({ onChanged }) {
     <section className="page-section admin-page">
       <div className="admin-heading">
         <div>
-          <span className="eyebrow">ESPACIO EDITORIAL · {admin.name}</span>
+          <span className="eyebrow">ESPACIO EDITORIAL · {admin.name || admin.username}</span>
           <h1>El próximo descubrimiento.</h1>
           <p>Creá, cuidá y compartí historias que valen el tiempo.</p>
         </div>
         <div className="admin-heading-actions">
-          <Link className="secondary" to="/admin/comunidad">
-            Comunidad
-          </Link>
+          {hasMinimumRole(admin, 'ADMIN') && (
+            <>
+              <Link className="secondary" to="/admin/comunidad">
+                Comunidad
+              </Link>
+              <Link className="secondary" to="/admin/users">
+                Usuarios
+              </Link>
+            </>
+          )}
           <Link className="primary" to="/admin/nueva">
             <Plus size={18} />
             Nueva reseña
@@ -186,7 +193,7 @@ export default function Dashboard({ onChanged }) {
             <tbody>
               {filtered.map((item) => (
                 <tr key={item.id}>
-                  <td>
+                  <td data-label="Historia">
                     <div className="admin-topic">
                       <img
                         src={item.imageUrl || '/covers/placeholder.svg'}
@@ -204,14 +211,14 @@ export default function Dashboard({ onChanged }) {
                       </div>
                     </div>
                   </td>
-                  <td>{categories[item.type]?.[0]}</td>
-                  <td>
+                  <td data-label="Categoría">{categories[item.type]?.[0]}</td>
+                  <td data-label="Estado">
                     <span className={`status-badge ${item.status.toLowerCase()}`}>
                       {item.status === 'PUBLISHED' ? 'Publicada' : 'Borrador'}
                     </span>
                   </td>
-                  <td>{item.rating.toFixed(1)} / 10</td>
-                  <td>
+                  <td data-label="Puntuación">{item.rating.toFixed(1)} / 10</td>
+                  <td data-label="Acciones">
                     <div className="row-actions">
                       <Link to={`/admin/editar/${item.id}`} aria-label={`Editar ${item.title}`}>
                         Editar
@@ -238,14 +245,16 @@ export default function Dashboard({ onChanged }) {
                         Ver
                         <ArrowUpRight size={13} />
                       </Link>
-                      <button
-                        className="danger-text"
-                        disabled={Boolean(busy)}
-                        onClick={() => setDeleting(item)}
-                        aria-label={`Eliminar ${item.title}`}
-                      >
-                        Eliminar
-                      </button>
+                      {hasMinimumRole(admin, 'ADMIN') && (
+                        <button
+                          className="danger-text"
+                          disabled={Boolean(busy)}
+                          onClick={() => setDeleting(item)}
+                          aria-label={`Eliminar ${item.title}`}
+                        >
+                          Eliminar
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

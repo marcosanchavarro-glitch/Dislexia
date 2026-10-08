@@ -18,7 +18,7 @@ export async function runCommunity({ app, prisma, email, password }) {
   const a = await register('reader_a'),
     b = await register('reader_b');
   const auth = (u) => `Bearer ${u.token}`;
-  assert.equal((await agent.get('/api/admin/content').set('Authorization', auth(a))).status, 401);
+  assert.equal((await agent.get('/api/admin/content').set('Authorization', auth(a))).status, 403);
   assert.equal(
     (
       await agent
@@ -119,15 +119,15 @@ export async function runCommunity({ app, prisma, email, password }) {
   assert.equal(report.status, 201);
   const admin = await agent.post('/api/auth/login').send({ email, password });
   const adminAuth = `Bearer ${admin.body.token}`;
-  assert.equal((await agent.get('/api/users/me').set('Authorization', adminAuth)).status, 401);
+  assert.equal((await agent.get('/api/users/me').set('Authorization', adminAuth)).status, 200);
   assert.equal(
     (
       await agent
-        .patch(`/api/admin/community/users/${b.user.id}`)
+        .patch(`/api/admin/users/${b.user.id}/status`)
         .set('Authorization', auth(a))
         .send({ status: 'BANNED' })
     ).status,
-    401,
+    403,
   );
   assert.equal(
     (
@@ -164,7 +164,7 @@ export async function runCommunity({ app, prisma, email, password }) {
   );
   for (const status of ['SUSPENDED', 'BANNED']) {
     await agent
-      .patch(`/api/admin/community/users/${b.user.id}`)
+      .patch(`/api/admin/users/${b.user.id}/status`)
       .set('Authorization', adminAuth)
       .send({ status });
     assert.equal(
@@ -191,7 +191,7 @@ export async function runCommunity({ app, prisma, email, password }) {
     );
   }
   await agent
-    .patch(`/api/admin/community/users/${b.user.id}`)
+    .patch(`/api/admin/users/${b.user.id}/status`)
     .set('Authorization', adminAuth)
     .send({ status: 'ACTIVE' });
   const prefs = { fontMode: 'accessible', fontSize: 'large', contrast: 'high', spacing: true };

@@ -7,7 +7,7 @@ Plataforma de reseñas de libros, películas, juegos y series para Ingeniería d
 - **Client:** React, Vite, JavaScript, React Router, Fuse.js y el CSS original. Preferencias y Mi lista siguen en localStorage.
 - **Server:** Node.js 22+, Express 5, Prisma, PostgreSQL, JWT, bcrypt, Zod, Multer, Sharp y Cloudinary.
 - El navegador consulta únicamente reseñas publicadas. Fuse.js busca sobre los datos reales recibidos.
-- El administrador envía un JWT Bearer; el servidor valida el token y que la cuenta siga existiendo en cada solicitud. Vigencia: dos horas. Se conserva en sessionStorage por pestaña, con respaldo en memoria si el navegador bloquea ese almacenamiento. Salir borra el token del navegador; un token emitido sigue siendo válido hasta su vencimiento.
+- Cada cuenta envía un único JWT Bearer; el servidor consulta User y sus permisos actuales en cada solicitud. Vigencia: dos horas. Se conserva en sessionStorage por pestaña, con respaldo en memoria si el navegador bloquea ese almacenamiento. Salir borra el token del navegador; un token emitido sigue siendo válido hasta su vencimiento.
 - Las imágenes se reciben en memoria (máximo 5 MB), se validan por extensión, MIME y decodificación real, se convierten a WebP y se suben desde el servidor a Cloudinary. No se guardan archivos de usuario en Render.
 - Las imágenes reemplazadas o eliminadas se registran en una cola PostgreSQL en la misma transacción de la reseña. Se intenta eliminarlas inmediatamente y cada minuto; la cola sobrevive a reinicios y fallos del proveedor. `npm run images:cleanup` permite procesarla manualmente.
 - Las portadas SVG originales de demostración continúan en `client/public/covers`; no están en Cloudinary y no se intenta borrarlas remotamente.
@@ -18,11 +18,11 @@ Plataforma de reseñas de libros, películas, juegos y series para Ingeniería d
 │   ├── public/covers/          portadas originales y placeholder
 │   ├── src/
 │   │   ├── components/         componentes originales y feedback/modal
-│   │   ├── context/            sesión administrativa y rutas protegidas
+│   │   ├── context/            sesión única y rutas según rol
 │   │   ├── data/               etiquetas de categorías, sin catálogo estático
 │   │   ├── hooks/              catálogo API, accesibilidad, Mi lista
 │   │   ├── lib/                API centralizada, búsqueda y almacenamiento
-│   │   ├── pages/admin/        Login, Dashboard, Editor y Preview
+│   │   ├── pages/admin/        Dashboard, Editor, Preview, Moderation y Users
 │   │   ├── pages/              Inicio, Explorar, Detalle y Mi lista
 │   │   └── styles/             CSS original + extensión administrativa
 │   └── tests/                  pruebas unitarias y navegador
@@ -92,9 +92,10 @@ Para inspeccionar la base: `cd server` y `npx prisma studio`.
 | `CLOUDINARY_CLOUD_NAME` | server        | Nombre del cloud de Cloudinary                                                |
 | `CLOUDINARY_API_KEY`    | server        | Clave de Cloudinary, solo backend                                             |
 | `CLOUDINARY_API_SECRET` | server        | Secreto de Cloudinary, solo backend                                           |
-| `ADMIN_NAME`            | server / seed | Nombre del administrador inicial                                              |
-| `ADMIN_EMAIL`           | server / seed | Email del administrador inicial                                               |
-| `ADMIN_PASSWORD`        | server / seed | Contraseña inicial, mínimo 12 caracteres y máximo 72 bytes                    |
+| `SUPER_ADMIN_NAME`      | server / seed | Nombre del administrador inicial                                              |
+| `SUPER_ADMIN_USERNAME`  | server / seed | Username inicial, 3 a 30 letras minúsculas/números/guion bajo                 |
+| `SUPER_ADMIN_EMAIL`     | server / seed | Email del administrador inicial                                               |
+| `SUPER_ADMIN_PASSWORD`  | server / seed | Contraseña inicial, mínimo 12 caracteres y máximo 72 bytes                    |
 | `RUN_MIGRATIONS`        | server        | `true` por defecto; `false` si las migraciones se aplican en otro paso        |
 | `POSTGRES_PASSWORD`     | Docker local  | Contraseña usada por `compose.yaml`                                           |
 | `VITE_API_URL`          | client        | URL del backend **sin** `/api`, por ejemplo `https://TU-API.onrender.com`     |
@@ -105,16 +106,16 @@ No subir `.env`, tokens, contraseñas ni URLs privadas de base de datos a GitHub
 
 ## Administrador inicial y seed
 
-Completá `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` en `server/.env` y ejecutá `npm run seed` dentro de server, o `npx prisma db seed`.
+Completá `SUPER_ADMIN_NAME`, `SUPER_ADMIN_USERNAME`, `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_PASSWORD` en `server/.env` y ejecutá `npm run seed` dentro de server, o `npx prisma db seed`.
 
 - No hay credenciales predeterminadas de producción.
 - La contraseña se guarda como hash bcrypt de coste 12.
 - El seed inserta 16 reseñas publicadas con IDs y slugs originales para conservar los vínculos y las listas de la versión anterior.
 - Es idempotente: repetirlo conserva administradores existentes, contraseñas y reseñas editadas; no sobrescribe datos.
 - No ejecutarlo como proceso periódico: si borraste una de las obras iniciales, volver a sembrar el catálogo la vuelve a insertar.
-- Acceso: `/admin/login`. Dashboard: `/admin`. Sin registro público.
-- Tras crear el admin en producción, retirar `ADMIN_PASSWORD` de las variables del servicio y de cualquier equipo donde ya no sea necesaria.
-- Cambiar `ADMIN_PASSWORD` y repetir el seed **no cambia** la contraseña de un administrador existente. Para una recuperación usar acceso autorizado a la base y un hash nuevo; no existe endpoint público de recuperación.
+- Acceso único: `/login`. Dashboard: `/admin` según rol. Registro público crea exclusivamente USER. `/admin/login` solo redirige al login único.
+- Tras crear el admin en producción, retirar `SUPER_ADMIN_PASSWORD` de las variables del servicio y de cualquier equipo donde ya no sea necesaria.
+- Cambiar `SUPER_ADMIN_PASSWORD` y repetir el seed **no cambia** la contraseña de un administrador existente. Para una recuperación usar acceso autorizado a la base y un hash nuevo; no existe endpoint público de recuperación.
 
 ## Modelos PostgreSQL
 
@@ -122,7 +123,7 @@ Completá `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` en `server/.env` y ejecu
 
 Campos especializados opcionales en la base: `author/pages`, `director/duration`, `developer/platform`, `creator/seasons`. La API exige solo los correspondientes al tipo elegido y limpia los de otros tipos. Los borradores usan el formulario completo. Cada edición incrementa `version`; una edición sobre una versión antigua devuelve 409 y pide recargar.
 
-**Admin:** `id`, `name`, `email` único, `passwordHash`, `createdAt`, `updatedAt`.
+**User:** identidad única, perfil, hash bcrypt, rol y estado. **Admin:** archivo histórico con vínculo `migratedUserId`; nunca autentica ni crea sesiones.
 
 **ImageDeletion:** `id`, `publicId` único, `attempts`, `createdAt`. Cola técnica de limpieza remota.
 
@@ -187,7 +188,7 @@ Configurar DATABASE_URL, JWT_SECRET, CLIENT_URL y las tres variables Cloudinary.
 
 ### 3. Seed de producción
 
-Si tu plan dispone de Shell, ejecutar desde el servicio: `npm run seed`, con las tres variables ADMIN completas. En planes sin Shell, hacerlo desde tu PC: configurar temporalmente en `server/.env` la **External Database URL** de Render (con SSL según la URL proporcionada), las variables ADMIN y ejecutar:
+Si tu plan dispone de Shell, ejecutar desde el servicio: `npm run seed`, con las cuatro variables SUPER_ADMIN completas. En planes sin Shell, hacerlo desde tu PC: configurar temporalmente en `server/.env` la **External Database URL** de Render (con SSL según la URL proporcionada), las variables SUPER_ADMIN y ejecutar:
 
 ```sh
 cd server
@@ -258,11 +259,11 @@ El código no provisiona cuentas externas. Para desplegar faltan tus variables P
 
 ## Usuarios y comunidad
 
-La ampliación conserva el catálogo editorial, panel administrativo, Cloudinary y Mi lista. Los usuarios tienen registro, sesión JWT de dos horas en sessionStorage, perfil editable y avatar validado con el mismo flujo de imágenes del catálogo. Las sesiones de administrador y usuario usan audiencias distintas y no son intercambiables.
+La ampliación conserva el catálogo editorial, panel administrativo, Cloudinary y Mi lista. Los usuarios tienen registro, sesión JWT de dos horas en sessionStorage, perfil editable y avatar validado con el mismo flujo de imágenes del catálogo. Existe una sola sesión con audiencia `entre-lineas-session`. Todos los roles usan el mismo perfil y token.
 
 Cada contenido publicado tiene comunidad con una reseña por usuario, puntuación de 1 a 5, spoilers ocultos hasta abrirlos, respuestas sin anidamiento, votos Útil persistentes e idempotentes, reportes y paginación. Las publicaciones propias se editan y eliminan lógicamente. Las publicaciones moderadas no pueden restaurarse desde una cuenta normal.
 
-`/admin/comunidad` contiene Reseñas, Respuestas, Reportes y Usuarios. Permite ocultar, restaurar, eliminar lógicamente, resolver reportes, suspender y bloquear usuarios. Los estados se comprueban en cada solicitud: suspender o bloquear también restringe tokens emitidos previamente. Las reseñas existentes se conservan al suspender usuarios; la moderación de publicaciones se realiza por separado. Si un contenido editorial tiene comunidad, su eliminación física se rechaza: puede pasarse a borrador conservando el historial.
+`/admin/comunidad` contiene Reseñas, Respuestas y Reportes. Permite ocultar, restaurar, eliminar lógicamente y resolver reportes. Las cuentas se administran exclusivamente desde `/admin/users` con controles de jerarquía. Los estados se comprueban en cada solicitud: suspender o bloquear también restringe tokens emitidos previamente. Las reseñas existentes se conservan al suspender usuarios; la moderación de publicaciones se realiza por separado. Si un contenido editorial tiene comunidad, su eliminación física se rechaza: puede pasarse a borrador conservando el historial.
 
 Preferencias de accesibilidad: visitantes siguen usando localStorage; las cuentas cargan y guardan sus ajustes en PostgreSQL. Mi lista conserva su implementación local para evitar cambios de sincronización y sigue funcionando para visitantes y usuarios.
 
@@ -274,13 +275,13 @@ Preferencias de accesibilidad: visitantes siguen usando localStorage; las cuenta
 - `GET/POST /api/content/:contentId/reviews` (ID de contenido, no slug).
 - `PUT/DELETE /api/reviews/:id`, `GET/POST /api/reviews/:id/replies`.
 - `PUT/DELETE /api/replies/:id`, `POST/DELETE /api/reviews/:id/helpful`, `POST /api/reports`.
-- `GET /api/admin/community/{reviews,replies,reports,users}`, `PATCH /api/admin/community/{recurso}/:id` con `{status}`.
+- `GET /api/admin/community/{reviews,replies,reports}`, `PATCH /api/admin/community/{recurso}/:id` con `{status}`.
 
 Los listados usan `page`, las reseñas públicas admiten `order=recent|rating|helpful|oldest` y `rating=1..5`, y los listados de moderación `q`. No se devuelve email ni hash de contraseñas en perfiles públicos. El backend valida longitud, formato, HTML, autoría y restricciones; registro/login/publicaciones/reportes tienen límites de solicitudes.
 
 ### Migración y datos ficticios
 
-La migración `20261006010000_community` agrega tablas y constraints sin reemplazar las existentes. Ejecutar `npm --prefix server run prisma:generate` y `npm --prefix server run migrate:deploy` antes de usar la ampliación; `npm start` también aplica migraciones como antes. No se requieren nuevas variables para producción.
+La migración `20261006010000_community` agrega tablas y constraints sin reemplazar las existentes. Ejecutar `npm --prefix server run prisma:generate` y `npm --prefix server run migrate:deploy` antes de usar la ampliación; `npm start` también aplica migraciones como antes. La actualización de roles se describe en INFORME-USUARIOS-ROLES.md; las variables SUPER_ADMIN_* solo se necesitan para bootstrap de una instalación nueva.
 
 Solo en desarrollo: `NODE_ENV=development`, `SEED_COMMUNITY=true` y `DEMO_USER_PASSWORD` (mínimo 12 caracteres, máximo 72 bytes) habilitan dos cuentas ficticias (`lectora_demo@example.test`, `cinefilo_demo@example.test`) y sus opiniones al ejecutar el seed. El password lo define quien ejecuta el seed y no se publica ni se fija en código. Producción nunca crea estos usuarios.
 

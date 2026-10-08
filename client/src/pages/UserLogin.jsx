@@ -29,7 +29,12 @@ export default function UserLogin({ register = false }) {
         register ? values : { email: values.email, password: values.password },
       );
       const next = location.state?.from;
-      navigate(next?.startsWith('/resena/') ? next : '/');
+      navigate(
+        typeof next === 'string' &&
+          (next.startsWith('/resena/') || next === '/admin' || next.startsWith('/admin/'))
+          ? next
+          : '/',
+      );
     } catch (err) {
       setError(err.message);
       setFields(err.fields || {});

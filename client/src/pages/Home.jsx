@@ -26,10 +26,12 @@ export default function Home({ ids, onToggle, content }) {
           <span className="hero-footnote">Sin spoilers. Sin vueltas. A tu ritmo.</span>
         </div>
         <div className="hero-art" aria-hidden="true">
-          <div className="art-orbit" />
-          <img className="hero-cover hero-cover-one" src="/covers/dune.svg" alt="" />
-          <img className="hero-cover hero-cover-two" src="/covers/interestelar.svg" alt="" />
-          <img className="hero-cover hero-cover-three" src="/covers/zelda.svg" alt="" />
+          <div className="hero-scene">
+            <div className="art-orbit" />
+            <img className="hero-cover hero-cover-one" src="/covers/dune.svg" alt="" />
+            <img className="hero-cover hero-cover-two" src="/covers/interestelar.svg" alt="" />
+            <img className="hero-cover hero-cover-three" src="/covers/zelda.svg" alt="" />
+          </div>
           <div className="art-note">
             <Sparkles size={18} />
             <span>

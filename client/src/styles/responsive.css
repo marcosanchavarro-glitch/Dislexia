@@ -1,0 +1,344 @@
+/* Shared intrinsic layouts: accessibility changes text, never the viewport font size. */
+body {
+  overflow-wrap: anywhere;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  letter-spacing: inherit;
+}
+main,
+.header-inner {
+  padding-inline: clamp(16px, 3vw, 32px);
+}
+:where(main, section, article, aside, form, label, nav, footer, .header-inner) > * {
+  min-width: 0;
+}
+:where(input, select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+}
+:where(button, .primary, .secondary, .danger) {
+  max-width: 100%;
+  min-height: 44px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+:where(.primary, .secondary, .danger) {
+  flex-wrap: wrap;
+  text-align: center;
+}
+:where(
+  .header nav,
+  .user-nav,
+  .section-heading,
+  .card-meta,
+  .card-bottom,
+  .genre-filter,
+  .category-summary span,
+  .verdict-rating,
+  .snackbar
+) {
+  flex-wrap: wrap;
+}
+.header nav {
+  gap: 12px 24px;
+}
+.header nav a,
+.user-nav a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.brand {
+  max-width: 100%;
+  font-size: 1.45rem;
+  flex-wrap: wrap;
+  white-space: normal;
+}
+.brand-icon,
+.user-avatar,
+.community-avatar,
+.search > svg,
+.dialog-heading > button {
+  flex-shrink: 0;
+}
+.user-nav > span {
+  overflow-wrap: anywhere;
+}
+.search kbd {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.eyebrow {
+  white-space: normal;
+}
+.little-line {
+  flex-shrink: 0;
+}
+.section-heading h2 {
+  flex-wrap: wrap;
+}
+.section-heading > a {
+  white-space: normal;
+}
+.genre-filter select {
+  width: auto;
+  max-width: 100%;
+}
+.reading-banner > div {
+  min-width: 0;
+}
+.card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+}
+.card-meta,
+.card-bottom {
+  gap: 8px 12px;
+}
+.type-tag {
+  max-width: calc(100% - 64px);
+  white-space: normal;
+}
+.save-button {
+  width: 44px;
+  height: 44px;
+}
+.cover-wrap {
+  height: auto;
+  aspect-ratio: 3 / 4;
+}
+.card h3 {
+  min-height: 0;
+  font-size: 1.08rem;
+}
+.hero {
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
+  overflow: visible;
+}
+.hero-art {
+  width: 100%;
+  max-width: 460px;
+  min-height: 0;
+  margin: auto;
+  transform: none;
+  padding: 16px;
+}
+.hero-scene {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.4;
+}
+.hero-cover {
+  width: 31%;
+  height: auto;
+  aspect-ratio: 155 / 230;
+  top: 15%;
+}
+.hero-cover-one {
+  left: 6%;
+  top: 18%;
+}
+.hero-cover-two {
+  left: 34%;
+  top: 8%;
+  width: 34%;
+  height: auto;
+}
+.hero-cover-three {
+  left: 63%;
+  top: 22%;
+}
+.art-orbit {
+  width: 75%;
+  height: auto;
+  aspect-ratio: 1;
+  left: 12.5%;
+  top: 0;
+}
+.art-note {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  width: fit-content;
+  max-width: 100%;
+  margin: 16px auto;
+  transform: none;
+}
+.art-note svg {
+  flex-shrink: 0;
+}
+.detail-layout {
+  grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+}
+.detail-layout dl {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+}
+.pros-cons {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+}
+.stat-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+}
+.stat-card span {
+  font-size: 0.85rem;
+}
+.form-grid,
+.editor-form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+}
+.users-filters {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+}
+.editor-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 290px);
+}
+.form-actions > *,
+.editor-actions > *,
+.admin-heading-actions > * {
+  flex: 0 1 auto;
+}
+.status-badge,
+.role-badge {
+  white-space: normal;
+}
+.image-preview:not(:has(img)) {
+  aspect-ratio: auto;
+  min-height: 12rem;
+  max-height: none;
+}
+.list-input button {
+  min-width: 44px;
+}
+.access-dialog {
+  width: min(540px, calc(100% - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: clamp(16px, 3vw, 28px);
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.dialog-heading > div {
+  min-width: 0;
+}
+.dialog-heading > button {
+  min-width: 44px;
+}
+.access-dialog .primary {
+  margin-left: 0;
+}
+.access-dialog > .primary,
+.access-dialog > .secondary {
+  margin-top: 12px;
+}
+.spacing-option {
+  align-items: flex-start;
+}
+.spacing-option input {
+  flex-shrink: 0;
+}
+.snackbar {
+  font-size: 0.9rem;
+}
+footer {
+  margin-inline: auto;
+  padding-inline: clamp(16px, 3vw, 32px);
+  flex-wrap: wrap;
+}
+:root[data-spacing='true'] :where(h1, h2, h3, .eyebrow) {
+  letter-spacing: 0.045em;
+  line-height: 1.5;
+}
+:root[data-contrast='high']
+  :where(
+    .community-card,
+    .community-form input,
+    .community-form textarea,
+    .community-form select,
+    .spoiler
+  ) {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line);
+}
+@media (max-width: 1050px) {
+  .admin-table,
+  .admin-table tbody,
+  .admin-table tr,
+  .admin-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .admin-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .admin-table tr {
+    padding: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .admin-table td {
+    padding: 8px;
+    border: 0;
+  }
+  .admin-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .admin-topic,
+  .row-actions {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .admin-topic > div {
+    min-width: 0;
+  }
+  .row-actions :where(button, a) {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .editor-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 780px) {
+  .hero,
+  .detail-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hero-copy {
+    padding: 28px 20px;
+  }
+  .detail-cover {
+    width: min(100%, 280px);
+    margin-inline: auto;
+  }
+  .community-card,
+  .editor-section {
+    padding: 16px;
+  }
+  .section-heading h2 {
+    font-size: 1.55rem;
+  }
+  .section-heading {
+    flex-wrap: wrap;
+  }
+  .discovery-strip a {
+    font-size: 0.85rem;
+    flex-wrap: wrap;
+  }
+  .access-button {
+    margin-left: 0;
+  }
+  .reading-banner {
+    padding: 20px;
+  }
+}

@@ -2,12 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import { randomUUID } from 'node:crypto';
-import { authMiddleware, tokenOptions } from './auth.js';
+import { authMiddleware, requireMinimumRole } from './auth.js';
+import { usersAdminRouter } from './users-admin.js';
 import { HttpError, errorHandler } from './errors.js';
-import { typeValues, parseContent, parseVersion, loginSchema, statusSchema } from './validation.js';
+import { typeValues, parseContent, parseVersion, statusSchema } from './validation.js';
 import { upload, enqueueDeletion, drainDeletions } from './images.js';
 import { communityRouter } from './community.js';
 const slugify = (text) =>
@@ -48,8 +47,10 @@ export function createApp({ prisma, images, config }) {
       message: { message: 'Demasiadas solicitudes. Esperá unos minutos.' },
     }),
   );
-  const requireAdmin = authMiddleware(prisma, config.JWT_SECRET);
+  const requireAuth = authMiddleware(prisma, config.JWT_SECRET);
+  const requireAdmin = [requireAuth, requireMinimumRole('ADMIN')];
   app.use('/api', communityRouter({ prisma, images, config, requireAdmin }));
+  app.use('/api', usersAdminRouter({ prisma, requireAuth }));
   const cleanup = () =>
     drainDeletions(prisma, images).catch(() => console.error('Limpieza de imágenes pendiente.'));
   const compensateUpload = async (publicId) => {
@@ -60,7 +61,6 @@ export function createApp({ prisma, images, config }) {
       void cleanup();
     }
   };
-  const dummyHash = bcrypt.hashSync(randomUUID(), 12);
   app.get('/api/health', async (req, res) => {
     await prisma.$queryRaw`SELECT 1`;
     res.json({ status: 'ok' });
@@ -86,30 +86,7 @@ export function createApp({ prisma, images, config }) {
     if (!item) throw new HttpError(404, 'Esta reseña ya no está publicada.');
     res.json(publicContent(item));
   });
-  app.post(
-    '/api/auth/login',
-    rateLimit({
-      windowMs: 15 * 60 * 1000,
-      limit: 10,
-      standardHeaders: 'draft-8',
-      legacyHeaders: false,
-      message: { message: 'Demasiados intentos. Esperá 15 minutos.' },
-    }),
-    async (req, res) => {
-      const { email, password } = loginSchema.parse(req.body);
-      const admin = await prisma.admin.findUnique({ where: { email } });
-      const matches = await bcrypt.compare(password, admin?.passwordHash || dummyHash);
-      if (!admin || !matches) throw new HttpError(401, 'Email o contraseña incorrectos.');
-      res.set('Cache-Control', 'no-store').json({
-        token: jwt.sign({}, config.JWT_SECRET, { ...tokenOptions, subject: admin.id }),
-        admin: { id: admin.id, name: admin.name, email: admin.email },
-      });
-    },
-  );
-  app.get('/api/auth/me', requireAdmin, (req, res) =>
-    res.set('Cache-Control', 'no-store').json(req.admin),
-  );
-  app.use('/api/admin', requireAdmin, (req, res, next) => {
+  app.use('/api/admin', requireAuth, requireMinimumRole('EDITOR'), (req, res, next) => {
     res.set('Cache-Control', 'no-store');
     next();
   });
@@ -131,7 +108,12 @@ export function createApp({ prisma, images, config }) {
     let item;
     try {
       item = await prisma.content.create({
-        data: { ...data, ...image, slug: `${slugify(data.title)}-${randomUUID().slice(0, 8)}` },
+        data: {
+          ...data,
+          ...image,
+          createdByUserId: req.user.id,
+          slug: `${slugify(data.title)}-${randomUUID().slice(0, 8)}`,
+        },
       });
     } catch (error) {
       await compensateUpload(image.imagePublicId);
@@ -176,7 +158,7 @@ export function createApp({ prisma, images, config }) {
       throw new HttpError(409, 'La reseña cambió o ya no existe. Recargá el listado.');
     res.json(await prisma.content.findUnique({ where: { id: req.params.id } }));
   });
-  app.delete('/api/admin/content/:id', async (req, res) => {
+  app.delete('/api/admin/content/:id', requireMinimumRole('ADMIN'), async (req, res) => {
     const version = parseVersion(req.body);
     await prisma.$transaction(async (db) => {
       const previous = await db.content.findUnique({ where: { id: req.params.id } });

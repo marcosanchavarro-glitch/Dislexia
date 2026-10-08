@@ -5,9 +5,10 @@ import jwt from 'jsonwebtoken';
 import { rateLimit } from 'express-rate-limit';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from './errors.js';
+import { authMiddleware, selfUser, tokenOptions, requireActive } from './auth.js';
 import { profileUpload, enqueueDeletion, drainDeletions } from './images.js';
 const publicUser = { id: true, username: true, avatarUrl: true, bio: true, createdAt: true };
-const selfUser = { ...publicUser, email: true, status: true, accessibility: true };
+
 const username = z
   .string()
   .trim()
@@ -85,40 +86,8 @@ const pageInput = z.object({
 export function communityRouter({ prisma, config, images, requireAdmin }) {
   const router = Router();
   const dummy = bcrypt.hashSync(randomUUID(), 12);
-  const userToken = {
-    algorithm: 'HS256',
-    expiresIn: '2h',
-    issuer: 'entre-lineas-api',
-    audience: 'entre-lineas-user',
-  };
-  const auth =
-    (optional = false) =>
-    async (req, res, next) => {
-      try {
-        const header = req.get('Authorization');
-        if (!header && optional) return next();
-        let token;
-        try {
-          token = jwt.verify((header || '').replace(/^Bearer /, ''), config.JWT_SECRET, {
-            algorithms: ['HS256'],
-            issuer: userToken.issuer,
-            audience: userToken.audience,
-          });
-        } catch {
-          throw new HttpError(401, 'Iniciá sesión nuevamente.');
-        }
-        req.user = await prisma.user.findUnique({ where: { id: token.sub }, select: selfUser });
-        if (!req.user) throw new HttpError(401, 'La cuenta no está disponible.');
-        res.set('Cache-Control', 'no-store');
-        next();
-      } catch (e) {
-        next(e);
-      }
-    };
-  const active = (req, res, next) =>
-    req.user.status === 'ACTIVE'
-      ? next()
-      : next(new HttpError(403, 'Tu cuenta no puede participar en la comunidad.'));
+  const auth = (optional = false) => authMiddleware(prisma, config.JWT_SECRET, optional);
+  const active = requireActive;
   const content = async (id) => {
     const c = await prisma.content.findFirst({ where: { id, status: 'PUBLISHED' } });
     if (!c) throw new HttpError(404, 'Contenido no disponible.');
@@ -142,10 +111,10 @@ export function communityRouter({ prisma, config, images, requireAdmin }) {
     return r;
   };
   const session = (u) => ({
-    token: jwt.sign({}, config.JWT_SECRET, { ...userToken, subject: u.id }),
+    token: jwt.sign({}, config.JWT_SECRET, { ...tokenOptions, subject: u.id }),
     user: u,
   });
-  router.post('/users/register', limiter(10), async (req, res) => {
+  router.post(['/auth/register', '/users/register'], limiter(10), async (req, res) => {
     const data = registration.parse(req.body);
     const conflicts = await prisma.user.findFirst({
       where: { OR: [{ email: data.email }, { username: data.username }] },
@@ -166,16 +135,17 @@ export function communityRouter({ prisma, config, images, requireAdmin }) {
     });
     res.status(201).set('Cache-Control', 'no-store').json(session(u));
   });
-  router.post('/users/login', limiter(10), async (req, res) => {
+  router.post(['/auth/login', '/users/login'], limiter(10), async (req, res) => {
     const d = credentials.parse(req.body);
     const u = await prisma.user.findUnique({ where: { email: d.email } });
     const ok = await bcrypt.compare(d.password, u?.passwordHash || dummy);
     if (!u || !ok) throw new HttpError(401, 'Email o contraseña incorrectos.');
+    if (u.status === 'BANNED') throw new HttpError(403, 'Esta cuenta está baneada.');
     res
       .set('Cache-Control', 'no-store')
       .json(session(await prisma.user.findUnique({ where: { id: u.id }, select: selfUser })));
   });
-  router.get('/users/me', auth(), (req, res) => res.json(req.user));
+  router.get(['/auth/me', '/users/me'], auth(), (req, res) => res.json(req.user));
   router.get('/users/me/accessibility', auth(), (req, res) =>
     res.json(
       req.user.accessibility || {
@@ -390,16 +360,13 @@ export function communityRouter({ prisma, config, images, requireAdmin }) {
     ['reviews', 'communityReview'],
     ['replies', 'reviewReply'],
     ['reports', 'report'],
-    ['users', 'user'],
   ]) {
     router.get(`/admin/community/${path}`, async (req, res) => {
       const { page, q } = pageInput.parse(req.query);
       const where = q
-        ? path === 'users'
-          ? { username: { contains: q, mode: 'insensitive' } }
-          : path === 'reports'
-            ? { description: { contains: q, mode: 'insensitive' } }
-            : { body: { contains: q, mode: 'insensitive' } }
+        ? path === 'reports'
+          ? { description: { contains: q, mode: 'insensitive' } }
+          : { body: { contains: q, mode: 'insensitive' } }
         : {};
       const relations =
         path === 'reviews'
@@ -412,9 +379,7 @@ export function communityRouter({ prisma, config, images, requireAdmin }) {
       res.json({
         items: await prisma[model].findMany({
           where,
-          ...(path === 'users'
-            ? { select: { ...publicUser, status: true } }
-            : { include: relations }),
+          include: relations,
           orderBy: { createdAt: 'desc' },
           skip: (page - 1) * 20,
           take: 20,
@@ -424,25 +389,51 @@ export function communityRouter({ prisma, config, images, requireAdmin }) {
     });
     router.patch(`/admin/community/${path}/:id`, async (req, res) => {
       const options =
-        path === 'users'
-          ? ['ACTIVE', 'SUSPENDED', 'BANNED']
-          : path === 'reports'
-            ? ['PENDING', 'REVIEWED', 'DISMISSED', 'ACTION_TAKEN']
-            : ['PUBLISHED', 'HIDDEN', 'DELETED'];
+        path === 'reports'
+          ? ['PENDING', 'REVIEWED', 'DISMISSED', 'ACTION_TAKEN']
+          : ['PUBLISHED', 'HIDDEN', 'DELETED'];
       const { status } = z
         .object({ status: z.enum(options) })
         .strict()
         .parse(req.body);
-      res.json(
-        await prisma[model].update({
-          where: { id: req.params.id },
+      const updated = await prisma.$transaction(async (db) => {
+        const previous = await db[model].findUnique({ where: { id: req.params.id } });
+        if (!previous) throw new HttpError(404, 'Publicación no encontrada.');
+        const result = await db[model].update({
+          where: { id: previous.id },
           data: {
             status,
             ...(path === 'reports' ? { resolvedAt: status === 'PENDING' ? null : new Date() } : {}),
           },
-          ...(path === 'users' ? { select: { ...publicUser, status: true } } : {}),
-        }),
-      );
+        });
+        await db.adminAuditLog.create({
+          data: {
+            actorUserId: req.user.id,
+            targetUserId: previous.userId || previous.reporterUserId,
+            action:
+              path === 'reports'
+                ? 'REPORT_UPDATED'
+                : 'COMMUNITY_' +
+                  (path === 'reviews' ? 'REVIEW' : 'REPLY') +
+                  '_' +
+                  (status === 'HIDDEN'
+                    ? 'HIDDEN'
+                    : status === 'PUBLISHED'
+                      ? 'RESTORED'
+                      : 'DELETED'),
+            metadata: {
+              resourceId: previous.id,
+              resourceType: path,
+              contentId: previous.contentId || null,
+              reviewId: previous.reviewId || null,
+              previous: previous.status,
+              next: status,
+            },
+          },
+        });
+        return result;
+      });
+      res.json(updated);
     });
   }
   return router;

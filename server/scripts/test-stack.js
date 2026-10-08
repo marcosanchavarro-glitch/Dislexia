@@ -2,13 +2,16 @@ import EmbeddedPostgres from 'embedded-postgres';
 import { PrismaClient } from '@prisma/client';
 import { createRequire } from 'node:module';
 import { randomBytes, randomUUID } from 'node:crypto';
-import { mkdir, mkdtemp } from 'node:fs/promises';
+import { mkdir, mkdtemp, cp, copyFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
+import assert from 'node:assert/strict';
 import { createApp } from '../src/app.js';
 import { runIntegration } from '../tests/api.integration.js';
 import { runCommunity } from '../tests/community.integration.js';
+import { runRoles } from '../tests/roles.integration.js';
+import { prepareLegacy, verifyLegacy } from '../tests/migration.integration.js';
 import { prepareImage } from '../src/images.js';
 export async function runStack(browser = false) {
   const require = createRequire(import.meta.url);
@@ -34,19 +37,45 @@ export async function runStack(browser = false) {
       NODE_ENV: 'test',
       DATABASE_URL: `postgresql://postgres:${password}@127.0.0.1:55432/entre_lineas_test?schema=public`,
       JWT_SECRET: randomBytes(32).toString('hex'),
-      CLIENT_URL: 'http://localhost:5173',
-      ADMIN_NAME: 'Editor de pruebas',
-      ADMIN_EMAIL: 'editor@example.test',
-      ADMIN_PASSWORD: randomBytes(20).toString('hex'),
+      CLIENT_URL: 'http://localhost:5187',
+      SUPER_ADMIN_NAME: 'Editor de pruebas',
+      SUPER_ADMIN_USERNAME: 'stack_owner',
+      SUPER_ADMIN_EMAIL: 'editor@example.test',
+      SUPER_ADMIN_PASSWORD: randomBytes(20).toString('hex'),
     };
     const run = (args) => {
       const result = spawnSync(process.execPath, args, { env, stdio: 'inherit' });
       if (result.status !== 0) throw Error(`Falló ${args[0]}`);
     };
-    run([require.resolve('prisma/build/index.js'), 'migrate', 'deploy']);
-    run(['prisma/seed.js']);
-    run(['prisma/seed.js']);
+    const legacySchema = resolve(databaseDir, 'legacy-schema');
+    await mkdir(resolve(legacySchema, 'migrations'), { recursive: true });
+    await copyFile('prisma/schema.prisma', resolve(legacySchema, 'schema.prisma'));
+    await copyFile(
+      'prisma/migrations/migration_lock.toml',
+      resolve(legacySchema, 'migrations/migration_lock.toml'),
+    );
+    for (const name of ['20261006000000_initial', '20261006010000_community'])
+      await cp(resolve('prisma/migrations', name), resolve(legacySchema, 'migrations', name), {
+        recursive: true,
+      });
+    run([
+      require.resolve('prisma/build/index.js'),
+      'migrate',
+      'deploy',
+      '--schema',
+      resolve(legacySchema, 'schema.prisma'),
+    ]);
     prisma = new PrismaClient({ datasources: { db: { url: env.DATABASE_URL } } });
+    const legacyHashes = await prepareLegacy(prisma);
+    run([require.resolve('prisma/build/index.js'), 'migrate', 'deploy']);
+    await verifyLegacy(prisma, legacyHashes);
+    run(['prisma/seed.js']);
+    const initialOwner = await prisma.user.findUnique({ where: { email: env.SUPER_ADMIN_EMAIL } });
+    run(['prisma/seed.js']);
+    assert.equal(
+      (await prisma.user.findUnique({ where: { email: env.SUPER_ADMIN_EMAIL } })).passwordHash,
+      initialOwner.passwordHash,
+    );
     const destroyed = [];
     const images = {
       async upload(file) {
@@ -65,12 +94,25 @@ export async function runStack(browser = false) {
       images,
       destroyed,
       config,
-      email: env.ADMIN_EMAIL,
-      password: env.ADMIN_PASSWORD,
+      email: env.SUPER_ADMIN_EMAIL,
+      password: env.SUPER_ADMIN_PASSWORD,
     });
-    await runCommunity({ app, prisma, email: env.ADMIN_EMAIL, password: env.ADMIN_PASSWORD });
+    await runCommunity({
+      app,
+      prisma,
+      email: env.SUPER_ADMIN_EMAIL,
+      password: env.SUPER_ADMIN_PASSWORD,
+    });
+    await runRoles({
+      app,
+      prisma,
+      config,
+      email: env.SUPER_ADMIN_EMAIL,
+      password: env.SUPER_ADMIN_PASSWORD,
+    });
     if (browser) {
-      server = app.listen(3001, '127.0.0.1');
+      // Independent API/browser suites get fresh rate-limit stores, never weakened limits.
+      server = createApp({ prisma, images, config }).listen(3001, '127.0.0.1');
       await once(server, 'listening');
       const clientRequire = createRequire(new URL('../../client/package.json', import.meta.url));
       const child = spawn(
@@ -81,8 +123,8 @@ export async function runStack(browser = false) {
           env: {
             ...env,
             STACK_TEST: 'true',
-            TEST_ADMIN_EMAIL: env.ADMIN_EMAIL,
-            TEST_ADMIN_PASSWORD: env.ADMIN_PASSWORD,
+            TEST_ADMIN_EMAIL: env.SUPER_ADMIN_EMAIL,
+            TEST_ADMIN_PASSWORD: env.SUPER_ADMIN_PASSWORD,
           },
           stdio: 'inherit',
         },

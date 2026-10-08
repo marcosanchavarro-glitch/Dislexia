@@ -1,5 +1,15 @@
 import { useEffect, useRef } from 'react';
-export default function ConfirmDialog({ item, busy, onCancel, onConfirm }) {
+export default function ConfirmDialog({
+  item,
+  busy,
+  onCancel,
+  onConfirm,
+  title,
+  description,
+  confirmLabel,
+  cancelLabel,
+  eyebrow,
+}) {
   const ref = useRef(null);
   useEffect(() => {
     if (item && !ref.current.open) ref.current.showModal();
@@ -15,18 +25,18 @@ export default function ConfirmDialog({ item, busy, onCancel, onConfirm }) {
         else onCancel();
       }}
     >
-      <span className="eyebrow">ELIMINAR RESEÑA</span>
-      <h2 id="delete-title">¿Eliminar “{item?.title}”?</h2>
+      <span className="eyebrow">{eyebrow || 'ELIMINAR RESEÑA'}</span>
+      <h2 id="delete-title">{title || `¿Eliminar “${item?.title}”?`}</h2>
       <p>
-        Se eliminarán la reseña y su imagen. Esta acción no se puede deshacer. Podés pasarla a
-        borrador si solo querés ocultarla.
+        {description ||
+          'Se eliminarán la reseña y su imagen. Esta acción no se puede deshacer. Podés pasarla a borrador si solo querés ocultarla.'}
       </p>
       <div className="form-actions">
         <button className="secondary" autoFocus disabled={busy} onClick={onCancel}>
-          Conservar reseña
+          {cancelLabel || 'Conservar reseña'}
         </button>
         <button className="danger" disabled={busy} onClick={onConfirm}>
-          {busy ? 'Eliminando…' : 'Eliminar definitivamente'}
+          {busy ? 'Procesando…' : confirmLabel || 'Eliminar definitivamente'}
         </button>
       </div>
     </dialog>

@@ -3,6 +3,7 @@ import { BookOpen, SlidersHorizontal } from 'lucide-react';
 import SearchBar from './SearchBar';
 import { useUser } from '../context/UserContext';
 import { Avatar } from '../pages/Profile';
+import { hasMinimumRole } from '../context/AuthContext';
 export default function Header({ query, onSearch, count, onAccessibility }) {
   const { user, logout } = useUser();
   return (
@@ -34,6 +35,11 @@ export default function Header({ query, onSearch, count, onAccessibility }) {
               <Avatar user={user} />
               <span>{user.username}</span>
               <Link to={`/profile/${user.username}`}>Mi perfil</Link>
+              {hasMinimumRole(user, 'EDITOR') && (
+                <Link to="/admin">
+                  {user.role === 'EDITOR' ? 'Panel editorial' : 'Administración'}
+                </Link>
+              )}
               <button className="secondary" onClick={logout}>
                 Cerrar sesión
               </button>

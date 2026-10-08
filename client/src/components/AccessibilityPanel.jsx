@@ -33,8 +33,8 @@ export default function AccessibilityPanel({ open, onClose, settings }) {
           'font',
           'Tipografía',
           [
-            ['default', 'Sans-serif predeterminada'],
-            ['accessible', 'Lectura accesible (Verdana)'],
+            ['default', 'Predeterminada'],
+            ['accessible', 'Verdana'],
           ],
         ],
         [
@@ -82,8 +82,8 @@ export default function AccessibilityPanel({ open, onClose, settings }) {
         Aumentar espaciado de líneas y letras
       </label>
       <p className="muted">
-        La opción accesible usa una fuente local de letras abiertas. No requiere descargar fuentes
-        ni garantiza un efecto clínico sobre la dislexia.
+        La opción Verdana usa una fuente local de letras abiertas. No requiere descargar fuentes ni
+        garantiza un efecto clínico sobre la dislexia.
       </p>
       {error && <p role="status">{error}</p>}
       {!settings.ready && <p role="status">Cargando tus preferencias…</p>}

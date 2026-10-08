@@ -15,3 +15,4 @@ createRoot(document.getElementById('root')).render(
   </React.StrictMode>,
 );
 import './styles/admin.css';
+import './styles/responsive.css';

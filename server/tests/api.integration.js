@@ -25,10 +25,10 @@ export async function runIntegration({ app, prisma, images, destroyed, config, e
   result = await agent.post('/api/auth/login').send({ email, password });
   assert.equal(result.status, 200);
   assert.ok(result.body.token);
-  assert.ok(!result.body.admin.passwordHash);
+  assert.ok(!result.body.user.passwordHash);
   const token = result.body.token,
     auth = `Bearer ${token}`;
-  const admin = await prisma.admin.findUnique({ where: { email } });
+  const admin = await prisma.user.findUnique({ where: { email } });
   assert.notEqual(admin.passwordHash, password);
   const expired = jwt.sign({}, config.JWT_SECRET, {
     ...tokenOptions,

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Routes, Route, useNavigate, useLocation, Link } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, Link, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import AccessibilityPanel from './components/AccessibilityPanel';
 import Snackbar from './components/Snackbar';
@@ -8,7 +8,6 @@ import Home from './pages/Home';
 import Explore from './pages/Explore';
 import Detail from './pages/Detail';
 import Watchlist from './pages/Watchlist';
-import Login from './pages/admin/Login';
 import Dashboard from './pages/admin/Dashboard';
 import Editor from './pages/admin/Editor';
 import Preview from './pages/admin/Preview';
@@ -18,8 +17,11 @@ import Moderation from './pages/admin/Moderation';
 import { useWatchlist } from './hooks/useWatchlist';
 import { useAccessibility } from './hooks/useAccessibility';
 import { useContent } from './hooks/useContent';
-import { AuthProvider, ProtectedRoute } from './context/AuthContext';
+import { ProtectedRoute, hasMinimumRole } from './context/AuthContext';
+import { useUser } from './context/UserContext';
+import Users, { UserAdminDetail } from './pages/admin/Users';
 export default function App() {
+  const { user } = useUser();
   const list = useWatchlist(),
     settings = useAccessibility(),
     catalog = useContent();
@@ -63,7 +65,7 @@ export default function App() {
       page
     );
   return (
-    <AuthProvider>
+    <>
       <a className="skip-link" href="#main">
         Saltar al contenido
       </a>
@@ -87,16 +89,23 @@ export default function App() {
           />
           <Route path="/mi-lista" element={publicPage(<Watchlist {...props} />)} />
           <Route path="/resena/:slug" element={<Detail {...props} />} />
-          <Route path="/admin/login" element={<Login />} />
+          <Route
+            path="/admin/login"
+            element={<Navigate to="/login" state={{ from: '/admin' }} replace />}
+          />
           <Route path="/login" element={<UserLogin />} />
           <Route path="/register" element={<UserLogin register />} />
           <Route path="/profile/:username" element={<Profile />} />
           <Route element={<ProtectedRoute />}>
-            <Route path="/admin/comunidad" element={<Moderation />} />
             <Route path="/admin" element={<Dashboard onChanged={catalog.reload} />} />
             <Route path="/admin/nueva" element={<Editor onChanged={catalog.reload} />} />
             <Route path="/admin/editar/:id" element={<Editor onChanged={catalog.reload} />} />
             <Route path="/admin/ver/:id" element={<Preview />} />
+          </Route>
+          <Route element={<ProtectedRoute minimum="ADMIN" />}>
+            <Route path="/admin/comunidad" element={<Moderation />} />
+            <Route path="/admin/users" element={<Users />} />
+            <Route path="/admin/users/:id" element={<UserAdminDetail />} />
           </Route>
           <Route
             path="*"
@@ -114,7 +123,9 @@ export default function App() {
           entre líneas.
         </Link>
         <span>Buenas historias. Decisiones a tu manera.</span>
-        <Link to="/admin">Administración</Link>
+        {hasMinimumRole(user, 'EDITOR') && (
+          <Link to="/admin">{user.role === 'EDITOR' ? 'Panel editorial' : 'Administración'}</Link>
+        )}
         <small>Proyecto de Ingeniería de Software · 2026</small>
       </footer>
       <AccessibilityPanel
@@ -136,6 +147,6 @@ export default function App() {
           }
         />
       )}
-    </AuthProvider>
+    </>
   );
 }
