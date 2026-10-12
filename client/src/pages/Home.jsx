@@ -18,8 +18,7 @@ export default function Home({ ids, onToggle, content }) {
             <span className="little-line" /> GRANDES HISTORIAS. MEJORES ELECCIONES.
           </span>
           <h1>
-            Tu próxima gran
-            <br />
+            Tu próxima gran <br />
             historia empieza <em>acá.</em>
           </h1>
           <p>

@@ -74,6 +74,7 @@ test('Mobile: filas, gutters, loading compacto y capturas completas', async ({ p
       expect(rects.nav.y).toBeGreaterThanOrEqual(rects.account.bottom);
       expect(rects.search.y).toBeGreaterThanOrEqual(rects.nav.bottom);
       expect(rects.search.x).toBe(width >= 390 ? 20 : 16);
+      expect(rects.search.bottom + 12).toBeLessThanOrEqual(220);
     }
     if ([320, 390, 430, 1440].includes(width)) {
       await page.evaluate(async () => {
@@ -92,20 +93,24 @@ test('Mobile: filas, gutters, loading compacto y capturas completas', async ({ p
       await page.locator('footer').screenshot({ path: `test-results/mobile-footer-${width}.png` });
     }
   }
-  const failures = await page.evaluate(() => {
-    const failures = [];
-    for (const font of ['default', 'accessible'])
-      for (const size of ['normal', 'large', 'larger'])
-        for (const spacing of ['false', 'true'])
-          for (const contrast of ['normal', 'soft', 'high']) {
-            Object.assign(document.documentElement.dataset, { font, size, spacing, contrast });
-            if (document.documentElement.scrollWidth > innerWidth)
-              failures.push({ font, size, spacing, contrast });
-          }
-    return failures;
-  });
-  expect(failures).toEqual([]);
+  for (const width of [320, 360, 375, 390, 414, 430, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    const failures = await page.evaluate(() => {
+      const failures = [];
+      for (const font of ['default', 'accessible'])
+        for (const size of ['normal', 'large', 'larger'])
+          for (const spacing of ['false', 'true'])
+            for (const contrast of ['normal', 'soft', 'high']) {
+              Object.assign(document.documentElement.dataset, { font, size, spacing, contrast });
+              if (document.documentElement.scrollWidth > innerWidth)
+                failures.push({ font, size, spacing, contrast });
+            }
+      return failures;
+    });
+    expect(failures).toEqual([]);
+  }
   await page.setViewportSize({ width: 320, height: 900 });
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: 'test-results/mobile-composition-320-F.png', fullPage: true });
   await page.screenshot({ path: 'test-results/mobile-top-320-F.png' });
   await page.unroute('**/api/content');
@@ -114,6 +119,27 @@ test('Mobile: filas, gutters, loading compacto y capturas completas', async ({ p
   await expect(page.locator('.api-state-loading')).toBeVisible();
   expect((await page.locator('.api-state-loading').boundingBox()).height).toBeLessThan(160);
   await page.screenshot({ path: 'test-results/mobile-loading-320.png', fullPage: true });
+});
+test('Mobile autenticado: cuenta y administración conservan filas compactas', async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem('entre-lineas-session', 'layout-test'));
+  await page.route('**/api/auth/me', (r) =>
+    r.fulfill({ json: { id: 'layout', username: 'marco', role: 'SUPER_ADMIN', status: 'ACTIVE' } }),
+  );
+  await page.route('**/api/users/me/accessibility', (r) =>
+    r.fulfill({
+      json: { fontMode: 'default', fontSize: 'normal', contrast: 'normal', spacing: false },
+    }),
+  );
+  await page.route('**/api/content', (r) => r.fulfill({ json: books }));
+  await page.goto('/');
+  await expect(page.getByRole('link', { name: 'Mi perfil', exact: true })).toBeVisible();
+  for (const width of [320, 390, 430]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await page.screenshot({ path: `test-results/mobile-auth-${width}.png` });
+  }
 });
 test('PostgreSQL real: publicar tres libros y reemplazar portada sin caché obsoleta', async ({
   page,
